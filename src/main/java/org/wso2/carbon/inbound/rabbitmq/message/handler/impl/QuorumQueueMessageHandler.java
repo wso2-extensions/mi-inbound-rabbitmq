@@ -117,7 +117,15 @@ public class QuorumQueueMessageHandler extends AbstractRabbitMQMessageHandler {
                     // Delay requeue if the delay property is set
                     if (rabbitMQProperties.containsKey(RabbitMQConstants.MESSAGE_REQUEUE_DELAY)) {
                         try {
-                            Thread.sleep(Long.parseLong(rabbitMQProperties.getProperty(RabbitMQConstants.MESSAGE_REQUEUE_DELAY)));
+                            String delayStr = rabbitMQProperties.getProperty(RabbitMQConstants.MESSAGE_REQUEUE_DELAY);
+                            long delay = 0L;
+                            try {
+                                delay = Long.parseLong(delayStr);
+                                Thread.sleep(delay);
+                            } catch (NumberFormatException nfe) {
+                                log.warn("[" + inboundName + "] Invalid MESSAGE_REQUEUE_DELAY value: '" + delayStr + "' for message id: " + messageID, nfe);
+                                // Optionally, skip sleep or use a default value
+                            }
                         } catch (InterruptedException ex) {
                             log.warn("[" + inboundName + "] Thread has been interrupted while delaying message requeue for message id: " + messageID, ex);
                         }

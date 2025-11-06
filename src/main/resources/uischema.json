@@ -1132,7 +1132,7 @@
           {
             "type": "attribute",
             "value": {
-              "name": " rabbitmq.dead.letter.publisher.shutdown.timeout",
+              "name": "rabbitmq.dead.letter.publisher.shutdown.timeout",
               "displayName": "Dead Letter Publisher Shutdown Timeout (ms)",
               "inputType": "string",
               "defaultValue": "180000",

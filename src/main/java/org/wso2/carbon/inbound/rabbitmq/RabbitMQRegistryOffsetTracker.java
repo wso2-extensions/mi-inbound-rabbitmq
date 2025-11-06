@@ -58,9 +58,19 @@ public class RabbitMQRegistryOffsetTracker {
         this.resourcePath = registryPath + "/" + RabbitMQConstants.RESOURCE_NAME;
 
         // Determine the flush interval from properties or use the default value
-        long interval = rabbitMqProperties.getProperty(RabbitMQConstants.STREAM_OFFSET_TRACKER_FLUSH_INTERVAL) != null ?
-                Long.parseLong(rabbitMqProperties.getProperty(RabbitMQConstants.STREAM_OFFSET_TRACKER_FLUSH_INTERVAL)) :
-                RabbitMQConstants.DEFAULT_STREAM_OFFSET_TRACKER_FLUSH_INTERVAL;
+        long interval;
+        String intervalStr = rabbitMqProperties.getProperty(RabbitMQConstants.STREAM_OFFSET_TRACKER_FLUSH_INTERVAL);
+        if (intervalStr != null && !intervalStr.trim().isEmpty()) {
+            try {
+                interval = Long.parseLong(intervalStr.trim());
+            } catch (NumberFormatException e) {
+                log.warn("Invalid value for " + RabbitMQConstants.STREAM_OFFSET_TRACKER_FLUSH_INTERVAL +
+                        ": '" + intervalStr + "'. Using default: " + RabbitMQConstants.DEFAULT_STREAM_OFFSET_TRACKER_FLUSH_INTERVAL, e);
+                interval = RabbitMQConstants.DEFAULT_STREAM_OFFSET_TRACKER_FLUSH_INTERVAL;
+            }
+        } else {
+            interval = RabbitMQConstants.DEFAULT_STREAM_OFFSET_TRACKER_FLUSH_INTERVAL;
+        }
 
         // Schedule periodic offset flushing
         scheduler.scheduleAtFixedRate(this::flushOffset, 10, interval, TimeUnit.SECONDS);
@@ -162,9 +172,18 @@ public class RabbitMQRegistryOffsetTracker {
         scheduler.shutdown();
         try {
             // Determine the shutdown timeout from properties or use the default value
-            long timeout = rabbitMqProperties.getProperty(RabbitMQConstants.STREAM_OFFSET_TRACKER_SHUTDOWN_TIMEOUT) != null ?
-                    Long.parseLong(rabbitMqProperties.getProperty(RabbitMQConstants.STREAM_OFFSET_TRACKER_SHUTDOWN_TIMEOUT)) :
-                    RabbitMQConstants.DEFAULT_STREAM_OFFSET_TRACKER_SHUTDOWN_TIMEOUT;
+            long timeout;
+            String timeoutStr = rabbitMqProperties.getProperty(RabbitMQConstants.STREAM_OFFSET_TRACKER_SHUTDOWN_TIMEOUT);
+            if (timeoutStr != null) {
+                try {
+                    timeout = Long.parseLong(timeoutStr);
+                } catch (NumberFormatException e) {
+                    log.warn("Shutdown timeout property is not a valid number. Using default value: " + RabbitMQConstants.DEFAULT_STREAM_OFFSET_TRACKER_SHUTDOWN_TIMEOUT);
+                    timeout = RabbitMQConstants.DEFAULT_STREAM_OFFSET_TRACKER_SHUTDOWN_TIMEOUT;
+                }
+            } else {
+                timeout = RabbitMQConstants.DEFAULT_STREAM_OFFSET_TRACKER_SHUTDOWN_TIMEOUT;
+            }
 
             // Await termination of the scheduler
             if (!scheduler.awaitTermination(timeout, TimeUnit.SECONDS)) {

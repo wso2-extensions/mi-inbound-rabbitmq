@@ -32,7 +32,7 @@ public class RabbitMQConstants {
     /**
      * Property key for the size of the message consumer thread pool.
      */
-    public static final String MESSAGE_RECEIVER_THREAD_POOL_SIZE = "rabbitmq..message.consumer.thread.pool.size";
+    public static final String MESSAGE_RECEIVER_THREAD_POOL_SIZE = "rabbitmq.message.consumer.thread.pool.size";
     public static final int DEFAULT_MESSAGE_RECEIVER_THREAD_POOL_SIZE = 10;
 
     /**

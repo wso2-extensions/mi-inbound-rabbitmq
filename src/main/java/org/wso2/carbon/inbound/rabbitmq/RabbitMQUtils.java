@@ -379,7 +379,7 @@ public class RabbitMQUtils {
      */
     private static void configureClassicQueue(Management.QueueSpecification queueBuilder, Properties properties) {
         if (properties.containsKey(RabbitMQConstants.CLASSIC_MAX_PRIORITY)) {
-            int maxPriority = Integer.parseInt(properties.getProperty(RabbitMQConstants.CLASSIC_MAX_PRIORITY));
+            int maxPriority = NumberUtils.toInt(properties.getProperty(RabbitMQConstants.CLASSIC_MAX_PRIORITY));
             queueBuilder.classic().maxPriority(maxPriority); // Set max priority for CLASSIC queues
         }
         if (properties.containsKey(RabbitMQConstants.CLASSIC_VERSION)) {
@@ -708,7 +708,7 @@ public class RabbitMQUtils {
      * @param arguments  The comma-separated string of arguments.
      * @return A map of parsed arguments, or null if no valid arguments are found.
      */
-    private static Map<String, Object> getOptionalArguments(Properties properties, String arguments) {
+    private static Map<String, Object> getOptionalArguments(String arguments) {
         Map<String, Object> optionalArgs = new HashMap<>();
         String[] keyValuePairs = arguments.split(",");
 

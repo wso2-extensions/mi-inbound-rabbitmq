@@ -213,7 +213,7 @@ public class RabbitMQEnvironment {
         String clientSecret = rabbitMQProperties.get(RabbitMQConstants.OAUTH2_CLIENT_SECRET);
 
         String[] missingOauth2Properties = {
-                StringUtils.isEmpty(tokenEndpoint) ? RabbitMQConstants.SSL_KEYSTORE_LOCATION : null,
+                StringUtils.isEmpty(tokenEndpoint) ? RabbitMQConstants.OAUTH2_TOKEN_ENDPOINT : null,
                 StringUtils.isEmpty(clientId) ? RabbitMQConstants.OAUTH2_CLIENT_ID : null,
                 StringUtils.isEmpty(clientSecret) ? RabbitMQConstants.OAUTH2_CLIENT_SECRET : null,
         };

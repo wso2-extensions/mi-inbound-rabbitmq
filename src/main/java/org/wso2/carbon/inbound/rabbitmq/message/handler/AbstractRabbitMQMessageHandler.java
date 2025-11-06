@@ -139,8 +139,19 @@ public abstract class AbstractRabbitMQMessageHandler implements Consumer.Message
             AckDecision ackDecision;
             try {
                 // Wait for acknowledgment decision with a timeout
-                long ackWaitTime = rabbitMQProperties.containsKey(RabbitMQConstants.ACK_MAX_WAIT_TIME) ?
-                        Long.parseLong(rabbitMQProperties.getProperty(RabbitMQConstants.ACK_MAX_WAIT_TIME)) : RabbitMQConstants.DEFAULT_ACK_MAX_WAIT_TIME;
+                long ackWaitTime;
+                if (rabbitMQProperties.containsKey(RabbitMQConstants.ACK_MAX_WAIT_TIME)) {
+                    String ackWaitTimeStr = rabbitMQProperties.getProperty(RabbitMQConstants.ACK_MAX_WAIT_TIME);
+                    try {
+                        ackWaitTime = Long.parseLong(ackWaitTimeStr);
+                    } catch (NumberFormatException e) {
+                        log.warn("[" + inboundName + "] Invalid value for ACK_MAX_WAIT_TIME: '" + ackWaitTimeStr
+                                + "'. Using default value: " + RabbitMQConstants.DEFAULT_ACK_MAX_WAIT_TIME, e);
+                        ackWaitTime = RabbitMQConstants.DEFAULT_ACK_MAX_WAIT_TIME;
+                    }
+                } else {
+                    ackWaitTime = RabbitMQConstants.DEFAULT_ACK_MAX_WAIT_TIME;
+                }
                 ackDecision = ackDecisionCallback.await(ackWaitTime);
             } catch (InterruptedException e) {
                 // Handle thread interruption during acknowledgment wait
