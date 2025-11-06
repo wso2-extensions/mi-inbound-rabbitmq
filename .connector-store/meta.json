@@ -1,0 +1,28 @@
+{
+  "name": "RabbitMQ (Inbound)",
+  "owner": "WSO2",
+  "product": "MI",
+  "mavenGroupId": "org.wso2.integration.inbound",
+  "mavenArtifactId": "mi-inbound-rabbitmq",
+  "rank": 15,
+  "type": "Inbound",
+  "category": "Developer Tools",
+  "documentationUrl": "",
+  "description": "RabbitMQ Message Listener",
+  "status": "Active",
+  "labels": [
+    "integration",
+    "communication",
+    "inbound-endpoint"
+  ],
+  "releases": [
+    {
+      "tagName": "v1.0.0",
+      "products": [
+        "MI 4.4.0",
+        "MI 4.5.0"
+      ],
+      "connections": []
+    }
+  ]
+}
