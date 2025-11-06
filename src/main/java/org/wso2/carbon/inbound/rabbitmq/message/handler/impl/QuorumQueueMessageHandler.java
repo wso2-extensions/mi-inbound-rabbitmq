@@ -123,7 +123,7 @@ public class QuorumQueueMessageHandler extends AbstractRabbitMQMessageHandler {
                                 delay = Long.parseLong(delayStr);
                                 Thread.sleep(delay);
                             } catch (NumberFormatException nfe) {
-                                log.warn("[" + inboundName + "] Invalid MESSAGE_REQUEUE_DELAY value: '" + delayStr + "' for message id: " + messageID, nfe);
+                                log.warn("[" + inboundName + "] Invalid rabbitmq.message.requeue.delay value: '" + delayStr + "' for message id: " + messageID, nfe);
                                 // Optionally, skip sleep or use a default value
                             }
                         } catch (InterruptedException ex) {

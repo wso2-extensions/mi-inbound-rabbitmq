@@ -241,7 +241,7 @@ private void handleDiscard(String messageID, RabbitMQMessageContext rabbitMQMsgC
             try {
                 maxDeadLetteredCount = Integer.parseInt(maxDeadLetteredCountStr.trim());
             } catch (NumberFormatException e) {
-                log.warn("Invalid value for MAX_DEAD_LETTERED_COUNT: " + maxDeadLetteredCountStr + ". Using default value -1.");
+                log.warn("[" + inboundName + "] Invalid value for "+ RabbitMQConstants.MAX_DEAD_LETTERED_COUNT + " : " + maxDeadLetteredCountStr + ". Using default value -1.");
                 maxDeadLetteredCount = -1;
             }
         } else {
@@ -294,6 +294,10 @@ private void handleDiscard(String messageID, RabbitMQMessageContext rabbitMQMsgC
             context.discard();
             log.info("[" + inboundName + "] The rejected message with message id: " + messageID +
                     " on the queue: " + this.queue + " is dead-lettered " + count + " time(s).");
+        } else if (count == null ) {
+            context.discard();
+            log.info("[" + inboundName + "] The rejected message with message id: " + messageID +
+                    " on the queue: " + this.queue + " is dead-lettered ");
         } else {
             // Handle the message after exceeding the max dead-letter count
             proceedAfterMaxDeadLetteredCount(messageID, rabbitMQMsgCtx, context);
@@ -389,10 +393,20 @@ private void handleDiscard(String messageID, RabbitMQMessageContext rabbitMQMsgC
             deadLetterPublisher.publish(message, publisherCallBack);
 
             try {
+
                 // Retrieve the retry interval from properties or use the default value
-                long retryInterval = rabbitMQProperties.getProperty(RabbitMQConstants.DEAD_LETTER_PUBLISHER_RETRY_INTERVAL) != null ?
-                        Long.parseLong(rabbitMQProperties.getProperty(RabbitMQConstants.DEAD_LETTER_PUBLISHER_RETRY_INTERVAL)) :
-                        (long) RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_INTERVAL;
+                long retryInterval;
+                String retryIntervalStr = rabbitMQProperties.getProperty(RabbitMQConstants.DEAD_LETTER_PUBLISHER_RETRY_INTERVAL);
+                if (retryIntervalStr != null) {
+                    try {
+                        retryInterval = Long.parseLong(retryIntervalStr);
+                    } catch (NumberFormatException e) {
+                        log.warn("[" + inboundName + "] Invalid value for " + RabbitMQConstants.DEAD_LETTER_PUBLISHER_RETRY_INTERVAL +  " : '" + retryIntervalStr + "'. Using default: " + RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_COUNT, e);
+                        retryInterval = RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_INTERVAL;
+                    }
+                } else {
+                    retryInterval = RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_INTERVAL;
+                }
 
                 // Handle the publishing result based on the callback status
                 handlePublishingResult(messageID, messageContext, consumerContext, deadLetterPublisher, publisherCallBack.result.get(retryInterval, TimeUnit.MILLISECONDS));
@@ -472,7 +486,7 @@ private void handleDiscard(String messageID, RabbitMQMessageContext rabbitMQMsgC
                try {
                    maxRetryAttempt = Integer.parseInt(maxRetryAttemptStr);
                } catch (NumberFormatException e) {
-                   log.warn("[" + inboundName + "] Invalid value for DEAD_LETTER_PUBLISHER_RETRY_COUNT: '" + maxRetryAttemptStr + "'. Using default: " + RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_COUNT, e);
+                   log.warn("[" + inboundName + "] Invalid value for "+ RabbitMQConstants.DEAD_LETTER_PUBLISHER_RETRY_COUNT+ " : '" + maxRetryAttemptStr + "'. Using default: " + RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_COUNT, e);
                    maxRetryAttempt = RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_COUNT;
                }
            } else {
@@ -487,13 +501,33 @@ private void handleDiscard(String messageID, RabbitMQMessageContext rabbitMQMsgC
                    deadLetterPublisher.publish(message, publisherCallBack);
 
                    // Retrieve retry interval and exponential factor from properties or use default values
-                   long retryInterval = rabbitMQProperties.getProperty(RabbitMQConstants.DEAD_LETTER_PUBLISHER_RETRY_INTERVAL) != null ?
-                           Long.parseLong(rabbitMQProperties.getProperty(RabbitMQConstants.DEAD_LETTER_PUBLISHER_RETRY_INTERVAL)) :
-                           (long) RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_INTERVAL;
 
-                   float exponentialFactor = rabbitMQProperties.getProperty(RabbitMQConstants.DEAD_LETTER_PUBLISHER_RETRY_EXPONENTIAL_FACTOR) != null ?
-                           Float.parseFloat(rabbitMQProperties.getProperty(RabbitMQConstants.DEAD_LETTER_PUBLISHER_RETRY_EXPONENTIAL_FACTOR)) :
-                           RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_EXPONENTIAL_FACTOR;
+                   long retryInterval;
+                   String retryIntervalStr = rabbitMQProperties.getProperty(RabbitMQConstants.DEAD_LETTER_PUBLISHER_RETRY_INTERVAL);
+                   if (retryIntervalStr != null) {
+                       try {
+                           retryInterval = Long.parseLong(retryIntervalStr);
+                       } catch (NumberFormatException e) {
+                           log.warn("[" + inboundName + "] Invalid value for "+ RabbitMQConstants.DEAD_LETTER_PUBLISHER_RETRY_INTERVAL+ " : '" + maxRetryAttemptStr + "'. Using default: " + RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_COUNT, e);
+                           retryInterval = RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_INTERVAL;
+                       }
+                   } else {
+                       retryInterval = RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_INTERVAL;
+                   }
+
+                   float exponentialFactor;
+                   String exponentialFactorStr = rabbitMQProperties.getProperty(RabbitMQConstants.DEAD_LETTER_PUBLISHER_RETRY_EXPONENTIAL_FACTOR);
+                   if (exponentialFactorStr != null) {
+                       try {
+                           exponentialFactor = Float.parseFloat(exponentialFactorStr);
+                       } catch (NumberFormatException e) {
+                           log.warn("[" + inboundName + "] Invalid value for "+ RabbitMQConstants.DEAD_LETTER_PUBLISHER_RETRY_EXPONENTIAL_FACTOR+ " : '" + maxRetryAttemptStr + "'. Using default: " + RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_COUNT, e);
+                           exponentialFactor = RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_EXPONENTIAL_FACTOR;
+                       }
+                   } else {
+                       exponentialFactor = RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_EXPONENTIAL_FACTOR;
+                   }
+
 
                    // Calculate the timeout for the current retry attempt
                    long timeout = (long) (retryInterval * Math.pow(exponentialFactor, retryAttempts.get()));
@@ -590,7 +624,7 @@ private void handleDiscard(String messageID, RabbitMQMessageContext rabbitMQMsgC
                   try {
                       shutdownTimeout = Long.parseLong(shutdownTimeoutStr);
                   } catch (NumberFormatException e) {
-                      log.warn("[" + inboundName + "] Invalid value for DEAD_LETTER_PUBLISHER_SHUTDOWN_TIMEOUT: '" + shutdownTimeoutStr + "'. Using default: " + RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_SHUTDOWN_TIMEOUT, e);
+                      log.warn("[" + inboundName + "] Invalid value for " + RabbitMQConstants.DEAD_LETTER_PUBLISHER_SHUTDOWN_TIMEOUT + ": ' " + shutdownTimeoutStr + "'. Using default: " + RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_SHUTDOWN_TIMEOUT, e);
                       shutdownTimeout = RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_SHUTDOWN_TIMEOUT;
                   }
               } else {

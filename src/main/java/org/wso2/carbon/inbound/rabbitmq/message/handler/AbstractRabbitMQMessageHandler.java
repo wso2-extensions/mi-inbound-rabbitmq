@@ -145,7 +145,7 @@ public abstract class AbstractRabbitMQMessageHandler implements Consumer.Message
                     try {
                         ackWaitTime = Long.parseLong(ackWaitTimeStr);
                     } catch (NumberFormatException e) {
-                        log.warn("[" + inboundName + "] Invalid value for ACK_MAX_WAIT_TIME: '" + ackWaitTimeStr
+                        log.warn("[" + inboundName + "] Invalid value for " + RabbitMQConstants.ACK_MAX_WAIT_TIME + " : '" + ackWaitTimeStr
                                 + "'. Using default value: " + RabbitMQConstants.DEFAULT_ACK_MAX_WAIT_TIME, e);
                         ackWaitTime = RabbitMQConstants.DEFAULT_ACK_MAX_WAIT_TIME;
                     }

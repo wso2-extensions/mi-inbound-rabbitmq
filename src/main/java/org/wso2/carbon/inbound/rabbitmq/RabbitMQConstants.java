@@ -281,7 +281,7 @@ public class RabbitMQConstants {
      * Initial interval (in milliseconds) for retrying dead-letter publishing.
      */
     public static final String DEAD_LETTER_PUBLISHER_RETRY_INTERVAL = "rabbitmq.dead.letter.publisher.retry.interval";
-    public static final double DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_INTERVAL = 10000; // 10 seconds
+    public static final long DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_INTERVAL = 10000; // 10 seconds
 
     /**
      * Maximum number of retries for dead-letter publishing.
