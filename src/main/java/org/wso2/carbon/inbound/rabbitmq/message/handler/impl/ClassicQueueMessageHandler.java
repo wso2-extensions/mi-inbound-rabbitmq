@@ -602,10 +602,11 @@ private void handleDiscard(String messageID, RabbitMQMessageContext rabbitMQMsgC
               long startTime = System.currentTimeMillis();
 
               // Schedule a task to clear the publisher pool at fixed intervals
+              long finalShutdownTimeout = shutdownTimeout;
               scheduler.scheduleAtFixedRate(() -> {
                   try {
                       // Check if the retry count map is empty or the shutdown timeout has been reached
-                      if (deadLetterRetryCountMap.isEmpty() || (System.currentTimeMillis() - startTime) >= shutdownTimeout) {
+                      if (deadLetterRetryCountMap.isEmpty() || (System.currentTimeMillis() - startTime) >= finalShutdownTimeout) {
                           // Clear the pool if no publishers are in use
                           if (activeDeadLetterPublishersInUse.get() == 0) {
                               deadLetterPublisherPool.clear();

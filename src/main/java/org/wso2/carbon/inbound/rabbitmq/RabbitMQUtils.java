@@ -441,7 +441,7 @@ public class RabbitMQUtils {
     private static void configureQueueArguments(Management.QueueSpecification queueBuilder, Properties properties) {
         String arguments = properties.getProperty(RabbitMQConstants.QUEUE_ARGUMENTS);
         if (StringUtils.isNotEmpty(arguments)) {
-            Map<String, Object> argumentMap = getOptionalArguments(properties, arguments);
+            Map<String, Object> argumentMap = getOptionalArguments(arguments);
             if (argumentMap != null) {
                 argumentMap.forEach(queueBuilder::argument); // Add optional arguments to the queue
             }
@@ -570,7 +570,7 @@ public class RabbitMQUtils {
             // Add optional arguments if specified
             String arguments = properties.getProperty(RabbitMQConstants.EXCHANGE_ARGUMENTS);
             if (StringUtils.isNotEmpty(arguments)) {
-                Map<String, Object> argumentMap = getOptionalArguments(properties, arguments);
+                Map<String, Object> argumentMap = getOptionalArguments( arguments);
                 if (argumentMap != null) {
                     argumentMap.forEach(exchangeBuilder::argument);
                 }
@@ -638,7 +638,7 @@ public class RabbitMQUtils {
         }
 
         // Parse header arguments into a map
-        Map<String, Object> headerArgsMap = getOptionalArguments(properties, headerArguments);
+        Map<String, Object> headerArgsMap = getOptionalArguments(headerArguments);
 
         // Return if the parsed arguments are empty
         if (headerArgsMap == null || headerArgsMap.isEmpty()) {
@@ -704,7 +704,6 @@ public class RabbitMQUtils {
     /**
      * Parses optional arguments from a comma-separated string into a map.
      *
-     * @param properties The properties containing the arguments.
      * @param arguments  The comma-separated string of arguments.
      * @return A map of parsed arguments, or null if no valid arguments are found.
      */
