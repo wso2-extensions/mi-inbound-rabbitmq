@@ -24,18 +24,18 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.wso2.integration.inbound</groupId>
     <artifactId>mi-inbound-rabbitmq</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.0-SNAPSHOT</version>
     <name>mi-inbound-rabbitmq</name>
     <url>http://wso2.org</url>
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <skip-tests>true</skip-tests>
         <maven.surfire.version>2.19.1</maven.surfire.version>
         <maven-shade-plugin.version>3.4.1</maven-shade-plugin.version>
         <rabbitmq.client.version>0.7.0</rabbitmq.client.version>
-        <inbound.endpoint.version>4.5.0-m1</inbound.endpoint.version>
+        <inbound.endpoint.version>4.5.0</inbound.endpoint.version>
         <io.netty.version>4.2.6.Final</io.netty.version>
     </properties>
     <dependencies>
