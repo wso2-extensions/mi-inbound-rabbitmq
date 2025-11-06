@@ -193,8 +193,12 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
              } else {
                  // If a requeue delay is configured, apply the delay
                  if (rabbitMQProperties.containsKey(RabbitMQConstants.MESSAGE_REQUEUE_DELAY)) {
+                     String delayValue = rabbitMQProperties.getProperty(RabbitMQConstants.MESSAGE_REQUEUE_DELAY);
                      try {
-                         Thread.sleep(Long.parseLong(rabbitMQProperties.getProperty(RabbitMQConstants.MESSAGE_REQUEUE_DELAY)));
+                         long delay = Long.parseLong(delayValue);
+                         Thread.sleep(delay);
+                     } catch (NumberFormatException ex) {
+                         log.warn("[" + inboundName + "] Invalid requeue delay value '" + delayValue + "' for message id: " + messageID + ". Skipping delay.", ex);
                      } catch (InterruptedException ex) {
                          log.warn("[" + inboundName + "] Thread has been interrupted while delaying message requeue for message id: " + messageID, ex);
                      }
@@ -231,7 +235,18 @@ private void handleDiscard(String messageID, RabbitMQMessageContext rabbitMQMsgC
                 : Collections.emptyList();
 
         // Retrieve the maximum dead-lettered count from properties
-        int maxDeadLetteredCount = Integer.parseInt(rabbitMQProperties.getProperty(RabbitMQConstants.MAX_DEAD_LETTERED_COUNT));
+        int maxDeadLetteredCount;
+        String maxDeadLetteredCountStr = rabbitMQProperties.getProperty(RabbitMQConstants.MAX_DEAD_LETTERED_COUNT);
+        if (maxDeadLetteredCountStr != null && !maxDeadLetteredCountStr.trim().isEmpty()) {
+            try {
+                maxDeadLetteredCount = Integer.parseInt(maxDeadLetteredCountStr.trim());
+            } catch (NumberFormatException e) {
+                log.warn("Invalid value for MAX_DEAD_LETTERED_COUNT: " + maxDeadLetteredCountStr + ". Using default value -1.");
+                maxDeadLetteredCount = -1;
+            }
+        } else {
+            maxDeadLetteredCount = -1;
+        }
 
         // Handle the message if x-death header is present and max dead-lettered count is valid
         if (!xDeathHeader.isEmpty() && maxDeadLetteredCount != -1) {
@@ -297,7 +312,16 @@ private void handleDiscard(String messageID, RabbitMQMessageContext rabbitMQMsgC
             // Check if the queue matches the current queue
             if (this.queue.equals(deathEntry.get(Symbol.getSymbol("queue")))) {
                 // Return the dead-letter count for the current queue
-                return Long.parseLong(deathEntry.get(Symbol.getSymbol("count")).toString());
+                Object countObj = deathEntry.get(Symbol.getSymbol("count"));
+                if (countObj != null) {
+                    try {
+                        return Long.parseLong(countObj.toString());
+                    } catch (NumberFormatException e) {
+                        log.warn("[" + inboundName + "] Unable to parse dead-letter count from x-death header for queue: " + this.queue + ". Value: " + countObj, e);
+                        return null;
+                    }
+                }
+                return null;
             }
         }
         // Return null if no matching entry is found
@@ -442,9 +466,18 @@ private void handleDiscard(String messageID, RabbitMQMessageContext rabbitMQMsgC
         */
        private void retryPublishing(String messageId, Message message, RabbitMQMessageContext messageContext, Publisher deadLetterPublisher, AtomicInteger retryAttempts) {
            // Retrieve the maximum retry attempts from properties or use the default value
-           int maxRetryAttempt = rabbitMQProperties.getProperty(RabbitMQConstants.DEAD_LETTER_PUBLISHER_RETRY_COUNT) != null ?
-                   Integer.parseInt(rabbitMQProperties.getProperty(RabbitMQConstants.DEAD_LETTER_PUBLISHER_RETRY_COUNT)) :
-                   RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_COUNT;
+           int maxRetryAttempt;
+           String maxRetryAttemptStr = rabbitMQProperties.getProperty(RabbitMQConstants.DEAD_LETTER_PUBLISHER_RETRY_COUNT);
+           if (maxRetryAttemptStr != null) {
+               try {
+                   maxRetryAttempt = Integer.parseInt(maxRetryAttemptStr);
+               } catch (NumberFormatException e) {
+                   log.warn("[" + inboundName + "] Invalid value for DEAD_LETTER_PUBLISHER_RETRY_COUNT: '" + maxRetryAttemptStr + "'. Using default: " + RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_COUNT, e);
+                   maxRetryAttempt = RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_COUNT;
+               }
+           } else {
+               maxRetryAttempt = RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_COUNT;
+           }
 
            // Retry publishing until the maximum retry attempts are reached
            while (retryAttempts.get() < maxRetryAttempt) {
@@ -535,7 +568,10 @@ private void handleDiscard(String messageID, RabbitMQMessageContext rabbitMQMsgC
           private void releaseDeadLetterPublisher(Publisher publisher) {
               if (publisher != null) {
                   // Add the publisher back to the pool
-                  deadLetterPublisherPool.offer(publisher);
+                  boolean offered = deadLetterPublisherPool.offer(publisher);
+                  if (!offered) {
+                      log.warn("[" + inboundName + "] Failed to return Publisher to DeadLetterPublisherPool.");
+                  }
                   // Decrement the count of active publishers in use
                   activeDeadLetterPublishersInUse.decrementAndGet();
               }
@@ -548,9 +584,18 @@ private void handleDiscard(String messageID, RabbitMQMessageContext rabbitMQMsgC
           @Override
           public void shutdown() {
               // Retrieve the shutdown timeout from properties or use the default value
-              long shutdownTimeout = rabbitMQProperties.getProperty(RabbitMQConstants.DEAD_LETTER_PUBLISHER_SHUTDOWN_TIMEOUT) != null ?
-                                      Long.parseLong(rabbitMQProperties.getProperty(RabbitMQConstants.DEAD_LETTER_PUBLISHER_SHUTDOWN_TIMEOUT)) :
-                                      RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_SHUTDOWN_TIMEOUT;
+              long shutdownTimeout;
+              String shutdownTimeoutStr = rabbitMQProperties.getProperty(RabbitMQConstants.DEAD_LETTER_PUBLISHER_SHUTDOWN_TIMEOUT);
+              if (shutdownTimeoutStr != null) {
+                  try {
+                      shutdownTimeout = Long.parseLong(shutdownTimeoutStr);
+                  } catch (NumberFormatException e) {
+                      log.warn("[" + inboundName + "] Invalid value for DEAD_LETTER_PUBLISHER_SHUTDOWN_TIMEOUT: '" + shutdownTimeoutStr + "'. Using default: " + RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_SHUTDOWN_TIMEOUT, e);
+                      shutdownTimeout = RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_SHUTDOWN_TIMEOUT;
+                  }
+              } else {
+                  shutdownTimeout = RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_SHUTDOWN_TIMEOUT;
+              }
 
               // Create a scheduled executor service to periodically check the pool status
               ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
