@@ -305,7 +305,7 @@ public class RabbitMQConstants {
      * Wait time (in milliseconds) for publisher acknowledgements in the dead-letter process.
      */
     public static final String DEAD_LETTER_PUBLISHER_ACK_WAIT_TIME = "rabbitmq.dead.letter.publisher.ack.wait.time";
-    public static final double DEFAULT_DEAD_LETTER_PUBLISHER_ACK_WAIT_TIME = 30000; // 30 seconds
+    public static final long DEFAULT_DEAD_LETTER_PUBLISHER_ACK_WAIT_TIME = 30000; // 30 seconds
 
     /**
      * Flag to override classic queue requeue behavior with discard instead of requeueing.
