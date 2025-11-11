@@ -18,10 +18,11 @@
 package org.wso2.carbon.inbound.rabbitmq;
 
 import com.rabbitmq.client.amqp.ByteCapacity;
-import com.rabbitmq.client.amqp.Consumer;
 import com.rabbitmq.client.amqp.Connection;
+import com.rabbitmq.client.amqp.Consumer;
 import com.rabbitmq.client.amqp.ConsumerBuilder;
 import com.rabbitmq.client.amqp.Management;
+
 import org.apache.axiom.om.OMElement;
 import org.apache.axis2.AxisFault;
 import org.apache.axis2.builder.Builder;
@@ -36,14 +37,14 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.inbound.rabbitmq.message.handler.AbstractRabbitMQMessageHandler;
 
-import javax.mail.internet.ContentType;
-import javax.mail.internet.ParseException;
 import java.io.ByteArrayInputStream;
 import java.time.Duration;
-
-import java.util.Properties;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
+import javax.mail.internet.ContentType;
+import javax.mail.internet.ParseException;
 
 /**
  * Utility class for RabbitMQ operations, providing methods for message handling,
@@ -62,12 +63,13 @@ public class RabbitMQUtils {
      * @param serviceProperties      The service properties for additional configurations.
      * @throws AxisFault If an error occurs while setting the SOAP envelope.
      */
-    public static void buildMessage(RabbitMQMessageContext rabbitMQMessageContext, MessageContext msgContext, Properties serviceProperties) throws AxisFault {
-        setCorrelationId(msgContext, rabbitMQMessageContext); // Set the correlation ID for the message.
-        String contentType = setContentType(msgContext, rabbitMQMessageContext, serviceProperties); // Determine and set the content type.
-        setContentEncoding(msgContext, rabbitMQMessageContext, serviceProperties); // Set the content encoding if available.
-        setTransactionCountedProperty(msgContext, rabbitMQMessageContext); // Set transaction-related properties.
-        setSoapEnvelop(msgContext, rabbitMQMessageContext.getBody(), contentType); // Build and set the SOAP envelope.
+    public static void buildMessage(RabbitMQMessageContext rabbitMQMessageContext,
+                                    MessageContext msgContext, Properties serviceProperties) throws AxisFault {
+        setCorrelationId(msgContext, rabbitMQMessageContext);
+        String contentType = setContentType(msgContext, rabbitMQMessageContext, serviceProperties);
+        setContentEncoding(msgContext, rabbitMQMessageContext, serviceProperties);
+        setTransactionCountedProperty(msgContext, rabbitMQMessageContext);
+        setSoapEnvelop(msgContext, rabbitMQMessageContext.getBody(), contentType);
     }
 
     /**
@@ -80,14 +82,15 @@ public class RabbitMQUtils {
     private static void setCorrelationId(MessageContext msgContext, RabbitMQMessageContext rabbitMQMessageContext) {
         String correlationID;
         if (StringUtils.isNotEmpty(rabbitMQMessageContext.getCorrelationId())) {
-            correlationID = rabbitMQMessageContext.getCorrelationId(); // Use the correlation ID from RabbitMQ context if available.
+            correlationID = rabbitMQMessageContext.getCorrelationId();
         } else if (StringUtils.isNotEmpty(rabbitMQMessageContext.getMessageID())) {
-            correlationID = rabbitMQMessageContext.getMessageID(); // Use the message ID if correlation ID is not available.
+            correlationID = rabbitMQMessageContext.getMessageID();
         } else {
-            correlationID = msgContext.getMessageID(); // Fallback to the Axis2 message ID.
+            // Fallback to the Axis2 message ID.
+            correlationID = msgContext.getMessageID();
         }
 
-        msgContext.setProperty(RabbitMQConstants.CORRELATION_ID, correlationID); // Set the correlation ID in the message context.
+        msgContext.setProperty(RabbitMQConstants.CORRELATION_ID, correlationID);
     }
 
     /**
@@ -99,21 +102,23 @@ public class RabbitMQUtils {
      * @param serviceProperties      The service properties for additional configurations.
      * @return The determined content type.
      */
-    private static String setContentType(MessageContext msgContext, RabbitMQMessageContext rabbitMQMessageContext, Properties serviceProperties) {
+    private static String setContentType(MessageContext msgContext,
+                                         RabbitMQMessageContext rabbitMQMessageContext, Properties serviceProperties) {
         String contentTypeFromService = serviceProperties.getProperty(RabbitMQConstants.CONTENT_TYPE);
         String contentTypeFromMessage = rabbitMQMessageContext.getContentType();
         String contentType;
 
         if (StringUtils.isNotEmpty(contentTypeFromMessage)) {
-            contentType = contentTypeFromMessage; // Use the content type from the RabbitMQ message context.
+            contentType = contentTypeFromMessage;
         } else if (StringUtils.isNotEmpty(contentTypeFromService)) {
-            contentType = contentTypeFromService; // Use the content type from the service properties.
+            contentType = contentTypeFromService;
         } else {
-            log.warn("Unable to determine content type for message " + msgContext.getMessageID() + ". Setting to text/plain.");
-            contentType = "text/plain"; // Default to "text/plain" if no content type is available.
+            log.warn("Unable to determine content type for message " + msgContext.getMessageID()
+                    + ". Setting to text/plain.");
+            contentType = "text/plain";
         }
 
-        msgContext.setProperty(RabbitMQConstants.CONTENT_TYPE, contentType); // Set the content type in the message context.
+        msgContext.setProperty(RabbitMQConstants.CONTENT_TYPE, contentType);
         return contentType;
     }
 
@@ -125,19 +130,23 @@ public class RabbitMQUtils {
      * @param rabbitMQMessageContext The RabbitMQ message context containing message details.
      * @param serviceProperties      The service properties for additional configurations.
      */
-    private static void setContentEncoding(MessageContext msgContext, RabbitMQMessageContext rabbitMQMessageContext, Properties serviceProperties) {
+    private static void setContentEncoding(MessageContext msgContext, RabbitMQMessageContext rabbitMQMessageContext,
+                                           Properties serviceProperties) {
         String encodingFromService = serviceProperties.getProperty(RabbitMQConstants.CONTENT_ENCODING);
-        String contentEncoding = StringUtils.isEmpty(encodingFromService) ? rabbitMQMessageContext.getContentEncoding() : encodingFromService;
+        String contentEncoding = StringUtils.isEmpty(encodingFromService)
+                ? rabbitMQMessageContext.getContentEncoding() : encodingFromService;
 
         if (contentEncoding != null) {
-            msgContext.setProperty(RabbitMQConstants.CONTENT_ENCODING, contentEncoding); // Set the content encoding in the message context.
+            msgContext.setProperty(RabbitMQConstants.CONTENT_ENCODING, contentEncoding);
         }
     }
 
 
-    private static void setTransactionCountedProperty(MessageContext msgContext, RabbitMQMessageContext rabbitMQMessageContext) {
+    private static void setTransactionCountedProperty(MessageContext msgContext,
+                                                      RabbitMQMessageContext rabbitMQMessageContext) {
         if (rabbitMQMessageContext.hasProperties()) {
-            Object transactionCounted = rabbitMQMessageContext.getApplicationProperties().get(RabbitMQConstants.INTERNAL_TRANSACTION_COUNTED);
+            Object transactionCounted = rabbitMQMessageContext.getApplicationProperties()
+                    .get(RabbitMQConstants.INTERNAL_TRANSACTION_COUNTED);
             if (transactionCounted != null) {
                 msgContext.setProperty(RabbitMQConstants.INTERNAL_TRANSACTION_COUNTED, transactionCounted);
             }
@@ -154,10 +163,12 @@ public class RabbitMQUtils {
      * @param contentType The content type of the message.
      * @throws AxisFault If an error occurs while processing the SOAP envelope.
      */
-    private static void setSoapEnvelop(MessageContext msgContext, byte[] body, String contentType) throws AxisFault {
-        Builder builder = getBuilder(msgContext, contentType); // Get the appropriate builder for the content type.
-        OMElement documentElement = builder.processDocument(new ByteArrayInputStream(body), contentType, msgContext); // Process the message body.
-        msgContext.setEnvelope(TransportUtils.createSOAPEnvelope(documentElement)); // Set the SOAP envelope in the message context.
+    private static void setSoapEnvelop(MessageContext msgContext, byte[] body,
+                                       String contentType) throws AxisFault {
+        Builder builder = getBuilder(msgContext, contentType);
+        OMElement documentElement = builder.processDocument(new ByteArrayInputStream(body),
+                contentType, msgContext);
+        msgContext.setEnvelope(TransportUtils.createSOAPEnvelope(documentElement));
     }
 
     /**
@@ -171,21 +182,22 @@ public class RabbitMQUtils {
      */
     private static Builder getBuilder(MessageContext msgContext, String rawContentType) throws AxisFault {
         try {
-            ContentType contentType = new ContentType(rawContentType); // Parse the content type.
+            ContentType contentType = new ContentType(rawContentType);
             String charset = contentType.getParameter(RabbitMQConstants.CHARSET);
-            msgContext.setProperty(RabbitMQConstants.CHARACTER_SET_ENCODING, charset); // Set the character set encoding.
+            msgContext.setProperty(RabbitMQConstants.CHARACTER_SET_ENCODING, charset);
 
-            Builder builder = BuilderUtil.getBuilderFromSelector(contentType.getBaseType(), msgContext); // Get the builder for the base type.
+            Builder builder = BuilderUtil.getBuilderFromSelector(contentType.getBaseType(), msgContext);
             if (builder == null) {
                 if (log.isDebugEnabled()) {
-                    log.debug("No message builder found for type '" + contentType.getBaseType() + "'. Falling back to SOAP.");
+                    log.debug("No message builder found for type '"
+                            + contentType.getBaseType() + "'. Falling back to SOAP.");
                 }
                 builder = new SOAPBuilder(); // Default to the SOAP builder.
             }
 
             return builder;
         } catch (ParseException e) {
-            throw new AxisFault("Error parsing content type: " + rawContentType, e); // Handle content type parsing errors.
+            throw new AxisFault("Error parsing content type: " + rawContentType, e);
         }
     }
 
@@ -197,7 +209,8 @@ public class RabbitMQUtils {
      * @param msgContext             The Axis2 message context containing additional headers.
      * @return A map of transport headers.
      */
-    public static Map<String, String> getTransportHeaders(RabbitMQMessageContext rabbitMQMessageContext, MessageContext msgContext) {
+    public static Map<String, String> getTransportHeaders(RabbitMQMessageContext rabbitMQMessageContext,
+                                                          MessageContext msgContext) {
         Map<String, String> map = new HashMap<>();
 
         // Add the correlation ID from the RabbitMQ message context if available.
@@ -220,7 +233,8 @@ public class RabbitMQUtils {
 
         // Add application properties from the RabbitMQ message context, excluding internal transaction properties.
         if (rabbitMQMessageContext.hasProperties()) {
-            for (Map.Entry<String, Object> headerEntry : rabbitMQMessageContext.getApplicationProperties().entrySet()) {
+            for (Map.Entry<String, Object> headerEntry : rabbitMQMessageContext
+                    .getApplicationProperties().entrySet()) {
                 String key = headerEntry.getKey();
                 Object value = headerEntry.getValue();
                 if (key != null && value != null && !RabbitMQConstants.INTERNAL_TRANSACTION_COUNTED.equals(key)) {
@@ -242,7 +256,10 @@ public class RabbitMQUtils {
      * @param registryOffsetTracker The offset tracker for managing stream offsets.
      * @return A configured RabbitMQ stream consumer.
      */
-    public static Consumer createStreamConsumer(Connection connection, AbstractRabbitMQMessageHandler messageHandler, Properties rabbitmqProperties, RabbitMQRegistryOffsetTracker registryOffsetTracker) {
+    public static Consumer createStreamConsumer(Connection connection,
+                                                AbstractRabbitMQMessageHandler messageHandler,
+                                                Properties rabbitmqProperties,
+                                                RabbitMQRegistryOffsetTracker registryOffsetTracker) {
         ConsumerBuilder consumerBuilder = connection.consumerBuilder();
         String queueName = rabbitmqProperties.getProperty(RabbitMQConstants.QUEUE_NAME);
         consumerBuilder.messageHandler(messageHandler).queue(queueName);
@@ -251,14 +268,17 @@ public class RabbitMQUtils {
         String streamFilters = rabbitmqProperties.getProperty(RabbitMQConstants.STREAM_FILTERS);
         if (StringUtils.isNotEmpty(streamFilters)) {
             String[] filterArray = streamFilters.split(",");
-            boolean matchUnfiltered = BooleanUtils.toBoolean(rabbitmqProperties.getProperty(RabbitMQConstants.STREAM_FILTER_MATCH_UNFILTERED));
+            boolean matchUnfiltered = BooleanUtils
+                    .toBoolean(rabbitmqProperties.getProperty(RabbitMQConstants.STREAM_FILTER_MATCH_UNFILTERED));
             consumerBuilder.stream().filterValues(filterArray).filterMatchUnfiltered(matchUnfiltered);
         } else {
             log.info("No stream filters defined. All messages in the stream queue will be consumed.");
         }
 
         // Add a subscription listener for the stream consumer
-        consumerBuilder.subscriptionListener(new RabbitMQStreamSubscriptionListener(registryOffsetTracker, rabbitmqProperties));
+        consumerBuilder.subscriptionListener(
+                new RabbitMQStreamSubscriptionListener(registryOffsetTracker, rabbitmqProperties)
+        );
 
         // Configure initial credits for the consumer
         configureInitialCredits(consumerBuilder, rabbitmqProperties);
@@ -273,7 +293,8 @@ public class RabbitMQUtils {
      * @param rabbitmqProperties The RabbitMQ properties for configuration.
      * @return A configured RabbitMQ default consumer.
      */
-    public static Consumer createDefaultConsumer(Connection connection, AbstractRabbitMQMessageHandler messageHandler, Properties rabbitmqProperties) {
+    public static Consumer createDefaultConsumer(Connection connection, AbstractRabbitMQMessageHandler messageHandler,
+                                                 Properties rabbitmqProperties) {
         ConsumerBuilder consumerBuilder = connection.consumerBuilder();
         String queueName = rabbitmqProperties.getProperty(RabbitMQConstants.QUEUE_NAME);
         consumerBuilder.messageHandler(messageHandler).queue(queueName);
@@ -292,14 +313,16 @@ public class RabbitMQUtils {
      * @param consumerBuilder    The consumer builder to configure.
      * @param rabbitmqProperties The RabbitMQ properties for configuration.
      */
-    private static void configureInitialCredits(ConsumerBuilder consumerBuilder, Properties rabbitmqProperties) {
+    private static void configureInitialCredits(ConsumerBuilder consumerBuilder,
+                                                Properties rabbitmqProperties) {
         int initialCredits = NumberUtils.toInt(
                 rabbitmqProperties.getProperty(RabbitMQConstants.CONSUMER_INITIAL_CREDIT),
                 RabbitMQConstants.DEFAULT_CONSUMER_INITIAL_CREDIT);
 
         // Log a message if the initial credit property is not defined
         if (!rabbitmqProperties.containsKey(RabbitMQConstants.CONSUMER_INITIAL_CREDIT)) {
-            log.info(RabbitMQConstants.CONSUMER_INITIAL_CREDIT + " is not defined. Using default: " + RabbitMQConstants.DEFAULT_CONSUMER_INITIAL_CREDIT);
+            log.info(RabbitMQConstants.CONSUMER_INITIAL_CREDIT + " is not defined. Using default: "
+                    + RabbitMQConstants.DEFAULT_CONSUMER_INITIAL_CREDIT);
         }
 
         // Set the initial credits for the consumer
@@ -329,19 +352,19 @@ public class RabbitMQUtils {
         Management.QueueSpecification queueBuilder = management.queue()
                 .name(queueName)
                 .type(queueType)
-                .autoDelete(isAutoDeleteQueue(properties)); // Set auto-delete property
+                .autoDelete(isAutoDeleteQueue(properties));
 
         // Configure the queue based on its type
         switch (queueType) {
             case CLASSIC:
-                queueBuilder.exclusive(isExclusiveQueue(properties)); // Set exclusive property for CLASSIC queues
-                configureClassicQueue(queueBuilder, properties); // Additional CLASSIC queue configurations
+                queueBuilder.exclusive(isExclusiveQueue(properties));
+                configureClassicQueue(queueBuilder, properties);
                 break;
             case QUORUM:
-                configureQuorumQueue(queueBuilder, properties); // Additional QUORUM queue configurations
+                configureQuorumQueue(queueBuilder, properties);
                 break;
             case STREAM:
-                configureStreamQueue(queueBuilder, properties); // Additional STREAM queue configurations
+                configureStreamQueue(queueBuilder, properties);
                 break;
         }
 
@@ -350,8 +373,11 @@ public class RabbitMQUtils {
 
         // Configure overflow strategy and dead-letter queue for non-STREAM queues
         if (queueType != Management.QueueType.STREAM) {
-            Management.OverflowStrategy overflowStrategy = properties.containsKey(RabbitMQConstants.QUEUE_OVERFLOW_STRATEGY)
-                    ? Management.OverflowStrategy.valueOf(properties.getProperty(RabbitMQConstants.QUEUE_OVERFLOW_STRATEGY))
+            Management.OverflowStrategy overflowStrategy =
+                    properties.containsKey(RabbitMQConstants.QUEUE_OVERFLOW_STRATEGY)
+                    ? Management.OverflowStrategy.valueOf(
+                            properties.getProperty(RabbitMQConstants.QUEUE_OVERFLOW_STRATEGY)
+                    )
                     : RabbitMQConstants.DEFAULT_QUEUE_OVERFLOW_STRATEGY;
 
             // Adjust overflow strategy for QUORUM queues with incompatible dead-letter strategies
@@ -360,11 +386,12 @@ public class RabbitMQUtils {
                             properties.getProperty(RabbitMQConstants.QUORUM_DEAD_LETTER_STRATEGY)) &&
                     overflowStrategy == Management.OverflowStrategy.DROP_HEAD) {
                 overflowStrategy = Management.OverflowStrategy.REJECT_PUBLISH;
-                log.warn("DROP_HEAD overflow strategy is not compatible with AT_LEAST_ONCE dead letter strategy for Quorum queues. Changing to REJECT_PUBLISH.");
+                log.warn("DROP_HEAD overflow strategy is not compatible with AT_LEAST_ONCE dead letter strategy " +
+                        "for Quorum queues. Changing to REJECT_PUBLISH.");
             }
 
-            queueBuilder.overflowStrategy(overflowStrategy); // Set the overflow strategy
-            configureDeadLetterQueue(management, queueBuilder, queueType, properties); // Configure dead-letter queue
+            queueBuilder.overflowStrategy(overflowStrategy);
+            configureDeadLetterQueue(management, queueBuilder, queueType, properties);
         }
 
         // Declare the queue
@@ -380,10 +407,12 @@ public class RabbitMQUtils {
     private static void configureClassicQueue(Management.QueueSpecification queueBuilder, Properties properties) {
         if (properties.containsKey(RabbitMQConstants.CLASSIC_MAX_PRIORITY)) {
             int maxPriority = NumberUtils.toInt(properties.getProperty(RabbitMQConstants.CLASSIC_MAX_PRIORITY));
-            queueBuilder.classic().maxPriority(maxPriority); // Set max priority for CLASSIC queues
+            queueBuilder.classic().maxPriority(maxPriority);
         }
         if (properties.containsKey(RabbitMQConstants.CLASSIC_VERSION)) {
-            Management.ClassicQueueVersion version = Management.ClassicQueueVersion.valueOf(properties.getProperty(RabbitMQConstants.CLASSIC_VERSION));
+            Management.ClassicQueueVersion version = Management.ClassicQueueVersion.valueOf(
+                    properties.getProperty(RabbitMQConstants.CLASSIC_VERSION)
+            );
             queueBuilder.classic().version(version); // Set CLASSIC queue version
         }
     }
@@ -397,16 +426,19 @@ public class RabbitMQUtils {
      */
     private static void configureQuorumQueue(Management.QueueSpecification queueBuilder, Properties properties) {
         if (properties.containsKey(RabbitMQConstants.QUORUM_INITIAL_MEMBER_COUNT)) {
-            int initialMemberCount = NumberUtils.toInt(properties.getProperty(RabbitMQConstants.QUORUM_INITIAL_MEMBER_COUNT));
-            queueBuilder.quorum().initialMemberCount(initialMemberCount); // Set initial member count for QUORUM queues
+            int initialMemberCount =
+                    NumberUtils.toInt(properties.getProperty(RabbitMQConstants.QUORUM_INITIAL_MEMBER_COUNT));
+            queueBuilder.quorum().initialMemberCount(initialMemberCount);
         }
         if (properties.containsKey(RabbitMQConstants.QUORUM_DELIVERY_LIMIT)) {
-            int deliveryLimit = NumberUtils.toInt(properties.getProperty(RabbitMQConstants.QUORUM_DELIVERY_LIMIT));
-            queueBuilder.quorum().deliveryLimit(deliveryLimit); // Set delivery limit for QUORUM queues
+            int deliveryLimit =
+                    NumberUtils.toInt(properties.getProperty(RabbitMQConstants.QUORUM_DELIVERY_LIMIT));
+            queueBuilder.quorum().deliveryLimit(deliveryLimit);
         }
         if (properties.containsKey(RabbitMQConstants.QUORUM_DEAD_LETTER_STRATEGY)) {
-            Management.QuorumQueueDeadLetterStrategy deadLetterStrategy = Management.QuorumQueueDeadLetterStrategy.valueOf(properties.getProperty(RabbitMQConstants.QUORUM_DEAD_LETTER_STRATEGY));
-            queueBuilder.quorum().deadLetterStrategy(deadLetterStrategy); // Set dead-letter strategy for QUORUM queues
+            Management.QuorumQueueDeadLetterStrategy deadLetterStrategy = Management.QuorumQueueDeadLetterStrategy
+                    .valueOf(properties.getProperty(RabbitMQConstants.QUORUM_DEAD_LETTER_STRATEGY));
+            queueBuilder.quorum().deadLetterStrategy(deadLetterStrategy);
         }
     }
 
@@ -419,16 +451,19 @@ public class RabbitMQUtils {
      */
     private static void configureStreamQueue(Management.QueueSpecification queueBuilder, Properties properties) {
         if (properties.containsKey(RabbitMQConstants.STREAM_INITIAL_MEMBER_COUNT)) {
-            int initialMemberCount = NumberUtils.toInt(properties.getProperty(RabbitMQConstants.STREAM_INITIAL_MEMBER_COUNT));
-            queueBuilder.stream().initialMemberCount(initialMemberCount); // Set initial member count for STREAM queues
+            int initialMemberCount =
+                    NumberUtils.toInt(properties.getProperty(RabbitMQConstants.STREAM_INITIAL_MEMBER_COUNT));
+            queueBuilder.stream().initialMemberCount(initialMemberCount);
         }
         if (properties.containsKey(RabbitMQConstants.STREAM_MAX_AGE)) {
-            long maxAge = NumberUtils.toLong(properties.getProperty(RabbitMQConstants.STREAM_MAX_AGE));
-            queueBuilder.stream().maxAge(Duration.ofSeconds(maxAge)); // Set maximum age for STREAM queues
+            long maxAge =
+                    NumberUtils.toLong(properties.getProperty(RabbitMQConstants.STREAM_MAX_AGE));
+            queueBuilder.stream().maxAge(Duration.ofSeconds(maxAge));
         }
         if (properties.containsKey(RabbitMQConstants.STREAM_MAX_SEGMENT_SIZE)) {
-            long maxSegmentSizeBytes = NumberUtils.toLong(properties.getProperty(RabbitMQConstants.STREAM_MAX_SEGMENT_SIZE));
-            queueBuilder.stream().maxSegmentSizeBytes(ByteCapacity.B(maxSegmentSizeBytes)); // Set maximum segment size for STREAM queues
+            long maxSegmentSizeBytes =
+                    NumberUtils.toLong(properties.getProperty(RabbitMQConstants.STREAM_MAX_SEGMENT_SIZE));
+            queueBuilder.stream().maxSegmentSizeBytes(ByteCapacity.B(maxSegmentSizeBytes));
         }
     }
 
@@ -443,7 +478,7 @@ public class RabbitMQUtils {
         if (StringUtils.isNotEmpty(arguments)) {
             Map<String, Object> argumentMap = getOptionalArguments(arguments);
             if (argumentMap != null) {
-                argumentMap.forEach(queueBuilder::argument); // Add optional arguments to the queue
+                argumentMap.forEach(queueBuilder::argument);
             }
         }
     }
@@ -456,46 +491,75 @@ public class RabbitMQUtils {
      * @param queueType    The type of the queue (CLASSIC, QUORUM, or STREAM).
      * @param properties   The properties containing dead-letter queue configurations.
      */
-    private static void configureDeadLetterQueue(Management management, Management.QueueSpecification queueBuilder, Management.QueueType queueType, Properties properties) {
+    private static void configureDeadLetterQueue(Management management,
+                                                 Management.QueueSpecification queueBuilder,
+                                                 Management.QueueType queueType,
+                                                 Properties properties) {
         String deadLetterQueueName = null;
         String deadLetterExchange = null;
         String deadLetterStrategy = null;
 
         // Check if dead-letter queue auto-declaration is enabled
-        if (BooleanUtils.toBooleanDefaultIfNull(BooleanUtils.toBooleanObject(properties.getProperty(RabbitMQConstants.DEAD_LETTER_QUEUE_AUTO_DECLARE)), false)) {
+        if (BooleanUtils.toBooleanDefaultIfNull(BooleanUtils
+                .toBooleanObject(properties.getProperty(RabbitMQConstants.DEAD_LETTER_QUEUE_AUTO_DECLARE)), false)) {
             deadLetterQueueName = properties.getProperty(RabbitMQConstants.DEAD_LETTER_QUEUE_NAME);
-            Management.QueueType deadLetterQueueType = Management.QueueType.valueOf(properties.getProperty(RabbitMQConstants.DEAD_LETTER_QUEUE_TYPE, RabbitMQConstants.DEFAULT_QUEUE_TYPE));
+            Management.QueueType deadLetterQueueType = Management.QueueType.valueOf(
+                    properties.getProperty(
+                            RabbitMQConstants.DEAD_LETTER_QUEUE_TYPE,
+                            RabbitMQConstants.DEFAULT_QUEUE_TYPE
+                    )
+            );
 
             // Handle CLASSIC queue-specific dead-letter strategy
             if (queueType == Management.QueueType.CLASSIC) {
-                deadLetterStrategy = properties.getProperty(RabbitMQConstants.CLASSIC_DEAD_LETTER_STRATEGY, RabbitMQConstants.ClassicDeadLetterStrategy.NON_RETRYABLE_DISCARD.name());
+                deadLetterStrategy = properties.getProperty(
+                        RabbitMQConstants.CLASSIC_DEAD_LETTER_STRATEGY,
+                        RabbitMQConstants.ClassicDeadLetterStrategy.NON_RETRYABLE_DISCARD.name()
+                );
 
-                if (RabbitMQConstants.ClassicDeadLetterStrategy.FIXED_DELAY_RETRYABLE_DISCARD.name().equalsIgnoreCase(deadLetterStrategy)) {
-                    long messageTTL = NumberUtils.toLong(properties.getProperty(RabbitMQConstants.DEAD_LETTER_QUEUE_MESSAGE_TTL), RabbitMQConstants.DEFAULT_DEAD_LETTER_QUEUE_MESSAGE_TTL);
-                    deadLetterQueueDeclare(management, deadLetterQueueName, deadLetterQueueType, messageTTL, properties.getProperty(RabbitMQConstants.EXCHANGE_NAME), properties.getProperty(RabbitMQConstants.ROUTING_KEY));
+                if (RabbitMQConstants.ClassicDeadLetterStrategy.FIXED_DELAY_RETRYABLE_DISCARD.name()
+                        .equalsIgnoreCase(deadLetterStrategy)) {
+                    long messageTTL = NumberUtils
+                            .toLong(properties.getProperty(
+                                    RabbitMQConstants.DEAD_LETTER_QUEUE_MESSAGE_TTL),
+                                    RabbitMQConstants.DEFAULT_DEAD_LETTER_QUEUE_MESSAGE_TTL);
+                    deadLetterQueueDeclare(management, deadLetterQueueName,
+                            deadLetterQueueType, messageTTL,
+                            properties.getProperty(RabbitMQConstants.EXCHANGE_NAME),
+                            properties.getProperty(RabbitMQConstants.ROUTING_KEY));
                 } else {
-                    deadLetterQueueDeclare(management, deadLetterQueueName, deadLetterQueueType, null, null, null);
+                    deadLetterQueueDeclare(management, deadLetterQueueName,
+                            deadLetterQueueType, null, null, null);
                 }
             } else {
                 // Default dead-letter queue declaration for non-CLASSIC queues
-                deadLetterQueueDeclare(management, deadLetterQueueName, deadLetterQueueType, null, null, null);
+                deadLetterQueueDeclare(management, deadLetterQueueName,
+                        deadLetterQueueType, null, null, null);
             }
         }
 
         // Configure dead-letter exchange if specified
         if (properties.containsKey(RabbitMQConstants.DEAD_LETTER_EXCHANGE_NAME)) {
             deadLetterExchange = properties.getProperty(RabbitMQConstants.DEAD_LETTER_EXCHANGE_NAME);
-            Management.ExchangeType deadLetterExchangeType = Management.ExchangeType.valueOf(properties.getProperty(RabbitMQConstants.DEAD_LETTER_EXCHANGE_TYPE, RabbitMQConstants.DEFAULT_EXCHANGE_TYPE));
+            Management.ExchangeType deadLetterExchangeType = Management.ExchangeType.valueOf(
+                    properties.getProperty(
+                            RabbitMQConstants.DEAD_LETTER_EXCHANGE_TYPE,
+                            RabbitMQConstants.DEFAULT_EXCHANGE_TYPE)
+            );
 
-            if (BooleanUtils.toBooleanDefaultIfNull(BooleanUtils.toBooleanObject(properties.getProperty(RabbitMQConstants.DEAD_LETTER_EXCHANGE_AUTO_DECLARE)), false)) {
+            if (BooleanUtils.toBooleanDefaultIfNull(BooleanUtils.toBooleanObject(
+                    properties.getProperty(RabbitMQConstants.DEAD_LETTER_EXCHANGE_AUTO_DECLARE)),
+                    false)) {
                 deadLetterExchangeDeclare(management, deadLetterExchange, deadLetterExchangeType);
             }
 
             // Bind dead-letter exchange to queue if the exchange type is direct
             if (deadLetterQueueName != null && deadLetterExchangeType == Management.ExchangeType.DIRECT) {
                 // use the exchange name if the routing key is not provided
-                String deadLetterRoutingKey = properties.getProperty(RabbitMQConstants.DEAD_LETTER_ROUTING_KEY, deadLetterExchange);
-                bindDeadLetterExchangeToQueue(management, deadLetterQueueName, deadLetterExchange, deadLetterRoutingKey);
+                String deadLetterRoutingKey =
+                        properties.getProperty(RabbitMQConstants.DEAD_LETTER_ROUTING_KEY, deadLetterExchange);
+                bindDeadLetterExchangeToQueue(management, deadLetterQueueName,
+                        deadLetterExchange, deadLetterRoutingKey);
                 queueBuilder.deadLetterRoutingKey(deadLetterRoutingKey);
             }
 
@@ -503,7 +567,9 @@ public class RabbitMQUtils {
         }
 
         // Configure final dead-letter queue for CLASSIC queues with FIXED_DELAY_RETRYABLE_DISCARD strategy
-        if (queueType == Management.QueueType.CLASSIC && RabbitMQConstants.ClassicDeadLetterStrategy.FIXED_DELAY_RETRYABLE_DISCARD.name().equalsIgnoreCase(deadLetterStrategy)) {
+        if (queueType == Management.QueueType.CLASSIC &&
+                RabbitMQConstants.ClassicDeadLetterStrategy.FIXED_DELAY_RETRYABLE_DISCARD.name()
+                        .equalsIgnoreCase(deadLetterStrategy)) {
             configureFinalDeadLetterQueue(management, properties);
         }
     }
@@ -517,10 +583,15 @@ public class RabbitMQUtils {
     private static void configureFinalDeadLetterQueue(Management management, Properties properties) {
         // Declare the final dead-letter queue if auto-declaration is enabled
         if (BooleanUtils.toBooleanDefaultIfNull(
-                BooleanUtils.toBooleanObject(properties.getProperty(RabbitMQConstants.FINAL_DEAD_LETTER_QUEUE_AUTO_DECLARE)), false)) {
+                BooleanUtils.toBooleanObject(
+                        properties.getProperty(RabbitMQConstants.FINAL_DEAD_LETTER_QUEUE_AUTO_DECLARE)),
+                false)) {
             String queueName = properties.getProperty(RabbitMQConstants.FINAL_DEAD_LETTER_QUEUE_NAME);
             Management.QueueType queueType = Management.QueueType.valueOf(
-                    properties.getProperty(RabbitMQConstants.FINAL_DEAD_LETTER_QUEUE_TYPE, RabbitMQConstants.DEFAULT_QUEUE_TYPE));
+                    properties.getProperty(
+                            RabbitMQConstants.FINAL_DEAD_LETTER_QUEUE_TYPE,
+                            RabbitMQConstants.DEFAULT_QUEUE_TYPE)
+            );
             deadLetterQueueDeclare(management, queueName, queueType, null, null, null);
         }
 
@@ -528,17 +599,23 @@ public class RabbitMQUtils {
         if (properties.containsKey(RabbitMQConstants.FINAL_DEAD_LETTER_EXCHANGE_NAME)) {
             String exchangeName = properties.getProperty(RabbitMQConstants.FINAL_DEAD_LETTER_EXCHANGE_NAME);
             Management.ExchangeType exchangeType = Management.ExchangeType.valueOf(
-                    properties.getProperty(RabbitMQConstants.FINAL_DEAD_LETTER_EXCHANGE_TYPE, RabbitMQConstants.DEFAULT_EXCHANGE_TYPE));
+                    properties.getProperty(
+                            RabbitMQConstants.FINAL_DEAD_LETTER_EXCHANGE_TYPE,
+                            RabbitMQConstants.DEFAULT_EXCHANGE_TYPE)
+            );
 
             if (BooleanUtils.toBooleanDefaultIfNull(
-                    BooleanUtils.toBooleanObject(properties.getProperty(RabbitMQConstants.FINAL_DEAD_LETTER_EXCHANGE_AUTO_DECLARE)), false)) {
+                    BooleanUtils.toBooleanObject(
+                            properties.getProperty(RabbitMQConstants.FINAL_DEAD_LETTER_EXCHANGE_AUTO_DECLARE)),
+                    false)) {
                 deadLetterExchangeDeclare(management, exchangeName, exchangeType);
             }
 
             // Bind the exchange to the queue if the type is DIRECT
             if (exchangeType == Management.ExchangeType.DIRECT) {
                 String queueName = properties.getProperty(RabbitMQConstants.FINAL_DEAD_LETTER_QUEUE_NAME);
-                String routingKey = properties.getProperty(RabbitMQConstants.FINAL_DEAD_LETTER_ROUTING_KEY, exchangeName);
+                String routingKey =
+                        properties.getProperty(RabbitMQConstants.FINAL_DEAD_LETTER_ROUTING_KEY, exchangeName);
                 bindDeadLetterExchangeToQueue(management, queueName, exchangeName, routingKey);
             }
         }
@@ -556,7 +633,8 @@ public class RabbitMQUtils {
         boolean autoDeclare = BooleanUtils.toBooleanDefaultIfNull(
                 BooleanUtils.toBooleanObject(properties.getProperty(RabbitMQConstants.EXCHANGE_AUTODECLARE)), true);
 
-        // Proceed only if the exchange name is valid, auto-declare is enabled, and the exchange is not a system exchange
+        // Proceed only if the exchange name is valid, auto-declare is enabled,
+        // and the exchange is not a system exchange
         if (StringUtils.isNotEmpty(exchangeName) && autoDeclare && !exchangeName.startsWith("amq.")) {
             Management.ExchangeType exchangeType = Management.ExchangeType.valueOf(
                     properties.getProperty(RabbitMQConstants.EXCHANGE_TYPE, RabbitMQConstants.DEFAULT_EXCHANGE_TYPE));
@@ -570,7 +648,7 @@ public class RabbitMQUtils {
             // Add optional arguments if specified
             String arguments = properties.getProperty(RabbitMQConstants.EXCHANGE_ARGUMENTS);
             if (StringUtils.isNotEmpty(arguments)) {
-                Map<String, Object> argumentMap = getOptionalArguments( arguments);
+                Map<String, Object> argumentMap = getOptionalArguments(arguments);
                 if (argumentMap != null) {
                     argumentMap.forEach(exchangeBuilder::argument);
                 }
@@ -590,7 +668,10 @@ public class RabbitMQUtils {
      * @param exchangeName The name of the exchange to bind to.
      * @param properties   The properties containing binding configuration details.
      */
-    public static void bindQueueToExchange(Management management, String queueName, String exchangeName, Properties properties) {
+    public static void bindQueueToExchange(Management management,
+                                           String queueName,
+                                           String exchangeName,
+                                           Properties properties) {
         // Validate that both the exchange name and queue name are provided
         if (StringUtils.isEmpty(exchangeName) || StringUtils.isEmpty(queueName)) {
             return;
@@ -602,16 +683,19 @@ public class RabbitMQUtils {
                 .destinationQueue(queueName);
 
         // Determine the exchange type and handle binding accordingly
-        String exchangeType = properties.getProperty(RabbitMQConstants.EXCHANGE_TYPE, RabbitMQConstants.DEFAULT_EXCHANGE_TYPE);
+        String exchangeType = properties.getProperty(RabbitMQConstants.EXCHANGE_TYPE,
+                        RabbitMQConstants.DEFAULT_EXCHANGE_TYPE);
         switch (Management.ExchangeType.valueOf(exchangeType)) {
             case HEADERS:
                 handleHeadersExchange(bindingBuilder, queueName, exchangeName, properties);
                 break;
             case FANOUT:
-                bindingBuilder.bind(); // Directly bind for FANOUT exchanges
+                // Directly bind for FANOUT exchanges
+                bindingBuilder.bind();
                 break;
             default:
-                handleDirectOrTopicExchange(bindingBuilder, queueName, properties); // Handle DIRECT or TOPIC exchanges
+                // Handle DIRECT or TOPIC exchanges
+                handleDirectOrTopicExchange(bindingBuilder, queueName, properties);
                 break;
         }
     }
@@ -626,13 +710,15 @@ public class RabbitMQUtils {
      * @param exchangeName   The name of the headers exchange.
      * @param properties     The properties containing header arguments.
      */
-    private static void handleHeadersExchange(Management.BindingSpecification bindingBuilder, String queueName, String exchangeName, Properties properties) {
+    private static void handleHeadersExchange(Management.BindingSpecification bindingBuilder, String queueName,
+                                              String exchangeName, Properties properties) {
         String headerArguments = properties.getProperty(RabbitMQConstants.HEADER_EXCHANGE_ARGUMENTS);
 
         // Return if no header arguments are specified
         if (StringUtils.isEmpty(headerArguments)) {
-            if(log.isDebugEnabled()) {
-                log.debug("No header arguments specified for the headers exchange. Hence not binding the queue: " + queueName + " to the exchange: " + exchangeName);
+            if (log.isDebugEnabled()) {
+                log.debug("No header arguments specified for the headers exchange. Hence not binding the queue: "
+                        + queueName + " to the exchange: " + exchangeName);
             }
             return;
         }
@@ -642,8 +728,9 @@ public class RabbitMQUtils {
 
         // Return if the parsed arguments are empty
         if (headerArgsMap == null || headerArgsMap.isEmpty()) {
-            if(log.isDebugEnabled()) {
-                log.debug("No header arguments specified for the headers exchange. Hence not binding the queue: " + queueName + " to the exchange: " + exchangeName);
+            if (log.isDebugEnabled()) {
+                log.debug("No header arguments specified for the headers exchange. Hence not binding the queue: "
+                        + queueName + " to the exchange: " + exchangeName);
             }
             return;
         }
@@ -664,7 +751,8 @@ public class RabbitMQUtils {
      * @param queueName      The name of the queue to bind.
      * @param properties     The properties containing the routing key.
      */
-    private static void handleDirectOrTopicExchange(Management.BindingSpecification bindingBuilder, String queueName, Properties properties) {
+    private static void handleDirectOrTopicExchange(Management.BindingSpecification bindingBuilder,
+                                                    String queueName, Properties properties) {
         // Use the routing key from properties or default to the queue name
         String routingKey = properties.getProperty(RabbitMQConstants.ROUTING_KEY, queueName);
         bindingBuilder.key(routingKey).bind();
@@ -678,7 +766,8 @@ public class RabbitMQUtils {
      * @return True if the queue is exclusive, false otherwise.
      */
     public static boolean isExclusiveQueue(Properties properties) {
-        return BooleanUtils.toBoolean(properties.getProperty(RabbitMQConstants.QUEUE_EXCLUSIVE, "false"));
+        return BooleanUtils
+                .toBoolean(properties.getProperty(RabbitMQConstants.QUEUE_EXCLUSIVE, "false"));
     }
 
     /**
@@ -688,7 +777,8 @@ public class RabbitMQUtils {
      * @return True if the queue is auto-delete, false otherwise.
      */
     public static boolean isAutoDeleteQueue(Properties properties) {
-        return BooleanUtils.toBoolean(properties.getProperty(RabbitMQConstants.QUEUE_AUTO_DELETE, "false"));
+        return BooleanUtils
+                .toBoolean(properties.getProperty(RabbitMQConstants.QUEUE_AUTO_DELETE, "false"));
     }
 
     /**
@@ -698,7 +788,8 @@ public class RabbitMQUtils {
      * @return True if the exchange is auto-delete, false otherwise.
      */
     public static boolean isAutoDeleteExchange(Properties properties) {
-        return BooleanUtils.toBoolean(properties.getProperty(RabbitMQConstants.EXCHANGE_AUTO_DELETE, "false"));
+        return BooleanUtils
+                .toBoolean(properties.getProperty(RabbitMQConstants.EXCHANGE_AUTO_DELETE, "false"));
     }
 
     /**
@@ -754,8 +845,9 @@ public class RabbitMQUtils {
      * @param mainExchangeName The name of the main exchange for dead-letter routing, or null if not applicable.
      * @param mainRoutingKey   The routing key for dead-letter routing, or null if not applicable.
      */
-    private static void deadLetterQueueDeclare(Management management, String queueName, Management.QueueType queueType,
-                                               Long messageTTL, String mainExchangeName, String mainRoutingKey) {
+    private static void deadLetterQueueDeclare(Management management, String queueName,
+                                               Management.QueueType queueType, Long messageTTL,
+                                               String mainExchangeName, String mainRoutingKey) {
         if (queueName != null) {
             Management.QueueSpecification builder = management.queue()
                     .name(queueName)
@@ -785,7 +877,8 @@ public class RabbitMQUtils {
      * @param exchangeName The name of the dead-letter exchange.
      * @param exchangeType The type of the exchange (e.g., DIRECT, FANOUT, TOPIC).
      */
-    private static void deadLetterExchangeDeclare(Management management, String exchangeName, Management.ExchangeType exchangeType) {
+    private static void deadLetterExchangeDeclare(Management management, String exchangeName,
+                                                  Management.ExchangeType exchangeType) {
         if (exchangeName != null) {
             management.exchange(exchangeName)
                     .type(exchangeType)
@@ -801,7 +894,8 @@ public class RabbitMQUtils {
      * @param exchangeName The name of the exchange to bind to.
      * @param routingKey   The routing key for the binding, or null if not applicable.
      */
-    private static void bindDeadLetterExchangeToQueue(Management management, String queueName, String exchangeName, String routingKey) {
+    private static void bindDeadLetterExchangeToQueue(Management management, String queueName,
+                                                      String exchangeName, String routingKey) {
         if (queueName != null && exchangeName != null) {
             Management.BindingSpecification bindingSpecification = management.binding()
                     .sourceExchange(exchangeName)

@@ -19,23 +19,21 @@ package org.wso2.carbon.inbound.rabbitmq;
 
 
 import com.rabbitmq.client.amqp.AmqpException;
+import com.rabbitmq.client.amqp.BackOffDelayPolicy;
+import com.rabbitmq.client.amqp.Connection;
 import com.rabbitmq.client.amqp.ConnectionSettings;
 import com.rabbitmq.client.amqp.Environment;
-import com.rabbitmq.client.amqp.Connection;
 import com.rabbitmq.client.amqp.impl.AmqpEnvironmentBuilder;
-import com.rabbitmq.client.amqp.BackOffDelayPolicy;
 
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.apache.synapse.SynapseException;
 
 
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.KeyStore;
@@ -51,6 +49,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+
+
+
 
 /**
  * This class represents the RabbitMQ environment configuration and connection management.
@@ -80,9 +85,11 @@ public class RabbitMQEnvironment {
      * @param addressSelector The address selector for RabbitMQ connections.
      * @throws RabbitMQException If an error occurs during the initialization of the AMQP environment.
      */
-    public RabbitMQEnvironment(String inboundName, Properties properties, RabbitMQRoundRobinAddressSelector addressSelector) throws RabbitMQException {
+    public RabbitMQEnvironment(String inboundName, Properties properties,
+                               RabbitMQRoundRobinAddressSelector addressSelector) throws RabbitMQException {
         // Populate RabbitMQ properties from the provided properties object
-        properties.stringPropertyNames().forEach(param -> rabbitMQProperties.put(param, properties.getProperty(param)));
+        properties.stringPropertyNames().forEach(param ->
+                rabbitMQProperties.put(param, properties.getProperty(param)));
 
         this.inboundName = inboundName;
         this.addressSelector = addressSelector;
@@ -103,49 +110,66 @@ public class RabbitMQEnvironment {
 
         // Retrieve SASL mechanism, defaulting to the predefined value if not provided
         String saslMechanism = StringUtils.defaultIfEmpty(
-                rabbitMQProperties.get(RabbitMQConstants.SASL_MECHANISM), RabbitMQConstants.DEFAULT_SASL_MECHANISM);
+                rabbitMQProperties.get(RabbitMQConstants.SASL_MECHANISM),
+                RabbitMQConstants.DEFAULT_SASL_MECHANISM
+        );
         if (!rabbitMQProperties.containsKey(RabbitMQConstants.SASL_MECHANISM)) {
-            log.warn(logPrefix + " - " + RabbitMQConstants.SASL_MECHANISM + " is not provided. Using default: " + RabbitMQConstants.DEFAULT_SASL_MECHANISM);
+            log.warn(logPrefix + " - " + RabbitMQConstants.SASL_MECHANISM + " is not provided. Using default: "
+                    + RabbitMQConstants.DEFAULT_SASL_MECHANISM);
         }
 
         // Retrieve virtual host, defaulting to the predefined value if not provided
         String virtualHost = StringUtils.defaultIfEmpty(
-                rabbitMQProperties.get(RabbitMQConstants.SERVER_VIRTUAL_HOST), RabbitMQConstants.DEFAULT_VIRTUAL_HOST);
+                rabbitMQProperties.get(RabbitMQConstants.SERVER_VIRTUAL_HOST),
+                RabbitMQConstants.DEFAULT_VIRTUAL_HOST
+        );
         if (!rabbitMQProperties.containsKey(RabbitMQConstants.SERVER_VIRTUAL_HOST)) {
-            log.warn(logPrefix + " - " + RabbitMQConstants.SERVER_VIRTUAL_HOST + " is not provided. Using default: " + RabbitMQConstants.DEFAULT_VIRTUAL_HOST);
+            log.warn(logPrefix + " - " + RabbitMQConstants.SERVER_VIRTUAL_HOST + " is not provided. Using default: "
+                    + RabbitMQConstants.DEFAULT_VIRTUAL_HOST);
         }
 
         // Retrieve connection idle timeout, defaulting to the predefined value if not provided
         int connectionIdleTimeout = NumberUtils.toInt(
-                rabbitMQProperties.get(RabbitMQConstants.IDLE_TIMEOUT), RabbitMQConstants.DEFAULT_IDLE_TIMEOUT);
+                rabbitMQProperties.get(RabbitMQConstants.IDLE_TIMEOUT),
+                RabbitMQConstants.DEFAULT_IDLE_TIMEOUT
+        );
         if (!rabbitMQProperties.containsKey(RabbitMQConstants.IDLE_TIMEOUT)) {
-            log.warn(logPrefix + " - " + RabbitMQConstants.IDLE_TIMEOUT + " is not provided. Using default: " + RabbitMQConstants.DEFAULT_IDLE_TIMEOUT);
+            log.warn(logPrefix + " - " + RabbitMQConstants.IDLE_TIMEOUT + " is not provided. Using default: "
+                    + RabbitMQConstants.DEFAULT_IDLE_TIMEOUT);
         }
 
         // Retrieve retry interval and retry count, defaulting to predefined values if not provided
         this.retryInterval = NumberUtils.toInt(
-                rabbitMQProperties.get(RabbitMQConstants.CONNECTION_ESTABLISH_RETRY_INTERVAL), RabbitMQConstants.DEFAULT_RETRY_INTERVAL);
+                rabbitMQProperties.get(RabbitMQConstants.CONNECTION_ESTABLISH_RETRY_INTERVAL),
+                RabbitMQConstants.DEFAULT_RETRY_INTERVAL
+        );
         if (!rabbitMQProperties.containsKey(RabbitMQConstants.CONNECTION_ESTABLISH_RETRY_INTERVAL)) {
-            log.warn(logPrefix + " - " + RabbitMQConstants.CONNECTION_ESTABLISH_RETRY_INTERVAL + " is not provided. Using default: " + RabbitMQConstants.DEFAULT_RETRY_INTERVAL);
+            log.warn(logPrefix + " - " + RabbitMQConstants.CONNECTION_ESTABLISH_RETRY_INTERVAL
+                    + " is not provided. Using default: " + RabbitMQConstants.DEFAULT_RETRY_INTERVAL);
         }
 
         this.retryCount = NumberUtils.toInt(
-                rabbitMQProperties.get(RabbitMQConstants.CONNECTION_ESTABLISH_RETRY_COUNT), RabbitMQConstants.DEFAULT_RETRY_COUNT);
+                rabbitMQProperties.get(RabbitMQConstants.CONNECTION_ESTABLISH_RETRY_COUNT),
+                RabbitMQConstants.DEFAULT_RETRY_COUNT
+        );
         if (!rabbitMQProperties.containsKey(RabbitMQConstants.CONNECTION_ESTABLISH_RETRY_COUNT)) {
-            log.warn(logPrefix + " - " + RabbitMQConstants.CONNECTION_ESTABLISH_RETRY_COUNT + " is not provided. Using default: " + RabbitMQConstants.DEFAULT_RETRY_COUNT);
+            log.warn(logPrefix + " - " + RabbitMQConstants.CONNECTION_ESTABLISH_RETRY_COUNT
+                    + " is not provided. Using default: " + RabbitMQConstants.DEFAULT_RETRY_COUNT);
         }
 
         // Check if SSL is enabled, defaulting to false if not provided
         boolean sslEnabled = BooleanUtils.toBooleanDefaultIfNull(
                 BooleanUtils.toBoolean(rabbitMQProperties.get(RabbitMQConstants.SSL_ENABLED)), false);
         if (!rabbitMQProperties.containsKey(RabbitMQConstants.SSL_ENABLED)) {
-            log.warn(logPrefix + " - " + RabbitMQConstants.SSL_ENABLED + " is not provided. Using default: false");
+            log.warn(logPrefix + " - " + RabbitMQConstants.SSL_ENABLED
+                    + " is not provided. Using default: false");
         }
 
         // Initialize the AMQP environment builder and set connection settings
         AmqpEnvironmentBuilder environmentBuilder = new AmqpEnvironmentBuilder();
         environmentBuilder.dispatchingExecutor(getDispatchingExecutor());
-        AmqpEnvironmentBuilder.EnvironmentConnectionSettings connectionSettings = environmentBuilder.connectionSettings();
+        AmqpEnvironmentBuilder.EnvironmentConnectionSettings connectionSettings =
+                environmentBuilder.connectionSettings();
         connectionSettings.addressSelector(addressSelector);
         connectionSettings.uris(getAddressList(sslEnabled));
         connectionSettings.virtualHost(virtualHost);
@@ -175,25 +199,35 @@ public class RabbitMQEnvironment {
      * @param connectionSettings The connection settings to configure.
      * @throws RabbitMQException If required properties are missing.
      */
-    private void configurePlainAuthentication(AmqpEnvironmentBuilder.EnvironmentConnectionSettings connectionSettings) throws RabbitMQException {
+    private void configurePlainAuthentication(AmqpEnvironmentBuilder.EnvironmentConnectionSettings connectionSettings)
+            throws RabbitMQException {
         connectionSettings.saslMechanism(ConnectionSettings.SASL_MECHANISM_PLAIN);
 
         boolean oauth2Enabled = BooleanUtils.toBooleanDefaultIfNull(
-                BooleanUtils.toBoolean(rabbitMQProperties.get(RabbitMQConstants.OAUTH2_ENABLED)), false);
+                BooleanUtils.toBoolean(
+                        rabbitMQProperties.get(RabbitMQConstants.OAUTH2_ENABLED)),
+                false
+        );
 
         if (oauth2Enabled) {
             configureOAuth2Authentication(connectionSettings);
         } else {
             String username = StringUtils.defaultIfEmpty(
-                    rabbitMQProperties.get(RabbitMQConstants.SERVER_USER_NAME), RabbitMQConstants.DEFAULT_USER);
+                    rabbitMQProperties.get(RabbitMQConstants.SERVER_USER_NAME),
+                    RabbitMQConstants.DEFAULT_USER
+            );
             if (!rabbitMQProperties.containsKey(RabbitMQConstants.SERVER_USER_NAME)) {
-                log.warn(logPrefix + " - " + RabbitMQConstants.SERVER_USER_NAME + " is not provided. Using default: " + RabbitMQConstants.DEFAULT_USER);
+                log.warn(logPrefix + " - " + RabbitMQConstants.SERVER_USER_NAME + " is not provided. Using default: "
+                        + RabbitMQConstants.DEFAULT_USER);
             }
 
             String password = StringUtils.defaultIfEmpty(
-                    rabbitMQProperties.get(RabbitMQConstants.SERVER_PASSWORD), RabbitMQConstants.DEFAULT_PASSWORD);
+                    rabbitMQProperties.get(RabbitMQConstants.SERVER_PASSWORD),
+                    RabbitMQConstants.DEFAULT_PASSWORD
+            );
             if (!rabbitMQProperties.containsKey(RabbitMQConstants.SERVER_PASSWORD)) {
-                log.warn(logPrefix + " - " + RabbitMQConstants.SERVER_PASSWORD + " is not provided. Using default: " + RabbitMQConstants.DEFAULT_PASSWORD);
+                log.warn(logPrefix + " - " + RabbitMQConstants.SERVER_PASSWORD + " is not provided. Using default: "
+                        + RabbitMQConstants.DEFAULT_PASSWORD);
             }
 
             connectionSettings.username(username);
@@ -207,7 +241,8 @@ public class RabbitMQEnvironment {
      * @param connectionSettings The connection settings to configure.
      * @throws RabbitMQException If required OAuth2 properties are missing.
      */
-    private void configureOAuth2Authentication(AmqpEnvironmentBuilder.EnvironmentConnectionSettings connectionSettings) throws RabbitMQException {
+    private void configureOAuth2Authentication(AmqpEnvironmentBuilder.EnvironmentConnectionSettings connectionSettings)
+            throws RabbitMQException {
         String tokenEndpoint = rabbitMQProperties.get(RabbitMQConstants.OAUTH2_TOKEN_ENDPOINT);
         String clientId = rabbitMQProperties.get(RabbitMQConstants.OAUTH2_CLIENT_ID);
         String clientSecret = rabbitMQProperties.get(RabbitMQConstants.OAUTH2_CLIENT_SECRET);
@@ -228,9 +263,12 @@ public class RabbitMQEnvironment {
         }
 
         String grantType = StringUtils.defaultIfEmpty(
-                rabbitMQProperties.get(RabbitMQConstants.OAUTH2_GRANT_TYPE), RabbitMQConstants.DEFAULT_OAUTH2_GRANT_TYPE);
+                rabbitMQProperties.get(RabbitMQConstants.OAUTH2_GRANT_TYPE),
+                RabbitMQConstants.DEFAULT_OAUTH2_GRANT_TYPE
+        );
         if (!rabbitMQProperties.containsKey(RabbitMQConstants.OAUTH2_GRANT_TYPE)) {
-            log.warn(logPrefix + " - " + RabbitMQConstants.OAUTH2_GRANT_TYPE + " is not provided. Using default: " + RabbitMQConstants.DEFAULT_OAUTH2_GRANT_TYPE);
+            log.warn(logPrefix + " - " + RabbitMQConstants.OAUTH2_GRANT_TYPE + " is not provided. Using default: "
+                    + RabbitMQConstants.DEFAULT_OAUTH2_GRANT_TYPE);
         }
 
         if (grantType.equalsIgnoreCase(RabbitMQConstants.OAUTH2_PASSWORD_GRANT_TYPE)) {
@@ -255,8 +293,9 @@ public class RabbitMQEnvironment {
      * @param clientSecret       The client secret.
      * @throws RabbitMQException If required properties are missing.
      */
-    private void configurePasswordGrant(AmqpEnvironmentBuilder.EnvironmentConnectionSettings connectionSettings,
-                                        String tokenEndpoint, String clientId, String clientSecret) throws RabbitMQException {
+    private void configurePasswordGrant(
+            AmqpEnvironmentBuilder.EnvironmentConnectionSettings connectionSettings,
+            String tokenEndpoint, String clientId, String clientSecret) throws RabbitMQException {
         String userName = rabbitMQProperties.get(RabbitMQConstants.OAUTH2_USERNAME);
         String password = rabbitMQProperties.get(RabbitMQConstants.OAUTH2_PASSWORD);
 
@@ -290,7 +329,9 @@ public class RabbitMQEnvironment {
      * @param sslEnabled         Whether SSL is enabled.
      * @throws RabbitMQException If SSL is not enabled for external authentication.
      */
-    private void configureExternalAuthentication(AmqpEnvironmentBuilder.EnvironmentConnectionSettings connectionSettings, boolean sslEnabled) throws RabbitMQException {
+    private void configureExternalAuthentication(
+            AmqpEnvironmentBuilder.EnvironmentConnectionSettings connectionSettings,
+            boolean sslEnabled) throws RabbitMQException {
         connectionSettings.saslMechanism(ConnectionSettings.SASL_MECHANISM_EXTERNAL);
         if (!sslEnabled) {
             throw new RabbitMQException("SASL Mechanism EXTERNAL requires SSL to be enabled.");
@@ -305,11 +346,16 @@ public class RabbitMQEnvironment {
     private void configureSSL(AmqpEnvironmentBuilder.EnvironmentConnectionSettings connectionSettings) {
         boolean trustEverything = Boolean.parseBoolean(rabbitMQProperties.get(RabbitMQConstants.SSL_TRUST_EVERYTHING));
         if (trustEverything) {
-            log.warn(logPrefix + " - " + RabbitMQConstants.SSL_TRUST_EVERYTHING + " is enabled. This is insecure and should not be used in production environments.");
+            log.warn(logPrefix + " - " + RabbitMQConstants.SSL_TRUST_EVERYTHING + " is enabled. " +
+                    "This is insecure and should not be used in production environments.");
             connectionSettings.tls().trustEverything();
         } else {
-            boolean hostnameVerification = Boolean.parseBoolean(rabbitMQProperties.getOrDefault(RabbitMQConstants.SSL_VERIFY_HOSTNAME, "true"));
-            log.info(logPrefix + " - Hostname verification is " + (hostnameVerification ? "enabled" : "disabled") + " for the AMQP connection.");
+            boolean hostnameVerification = Boolean.parseBoolean(
+                    rabbitMQProperties.getOrDefault(RabbitMQConstants.SSL_VERIFY_HOSTNAME,
+                            "true")
+            );
+            log.info(logPrefix + " - Hostname verification is " + (hostnameVerification ? "enabled" : "disabled")
+                    + " for the AMQP connection.");
             connectionSettings.tls().sslContext(getSSLContext()).hostnameVerification(hostnameVerification);
         }
     }
@@ -341,7 +387,9 @@ public class RabbitMQEnvironment {
     private ThreadFactory createThreadFactory() {
         return r -> {
             Thread thread = Executors.defaultThreadFactory().newThread(r);
-            thread.setName(inboundName + RabbitMQConstants.MESSAGE_RECEIVER_THREAD_NAME_PREFIX + count.getAndIncrement());
+            thread.setName(inboundName +
+                    RabbitMQConstants.MESSAGE_RECEIVER_THREAD_NAME_PREFIX +
+                    count.getAndIncrement());
             return thread;
         };
     }
@@ -359,15 +407,20 @@ public class RabbitMQEnvironment {
     private String[] getAddressList(boolean sslEnabled) {
         // Retrieve hostnames, defaulting to the predefined value if not provided
         String[] hostnameArray = StringUtils.defaultIfEmpty(
-                rabbitMQProperties.get(RabbitMQConstants.SERVER_HOST_NAME), RabbitMQConstants.DEFAULT_HOST).split(",");
+                rabbitMQProperties.get(RabbitMQConstants.SERVER_HOST_NAME),
+                RabbitMQConstants.DEFAULT_HOST
+        ).split(",");
         if (!rabbitMQProperties.containsKey(RabbitMQConstants.SERVER_HOST_NAME)) {
-            log.warn(logPrefix + " - Hostname is not defined. Using default hostname: " + RabbitMQConstants.DEFAULT_HOST);
+            log.warn(logPrefix + " - Hostname is not defined. Using default hostname: "
+                    + RabbitMQConstants.DEFAULT_HOST);
         }
 
         // Retrieve ports, defaulting to the appropriate default based on SSL
         String[] portArray = StringUtils.defaultIfEmpty(
                 rabbitMQProperties.get(RabbitMQConstants.SERVER_PORT),
-                sslEnabled ? String.valueOf(RabbitMQConstants.DEFAULT_TLS_PORT) : String.valueOf(RabbitMQConstants.DEFAULT_PORT)).split(",");
+                sslEnabled ? String.valueOf(RabbitMQConstants.DEFAULT_TLS_PORT)
+                        : String.valueOf(RabbitMQConstants.DEFAULT_PORT)
+        ).split(",");
         if (!rabbitMQProperties.containsKey(RabbitMQConstants.SERVER_PORT)) {
             log.warn(logPrefix + " - Port is not defined. Using default port: " +
                     (sslEnabled ? RabbitMQConstants.DEFAULT_TLS_PORT : RabbitMQConstants.DEFAULT_PORT));
@@ -453,7 +506,8 @@ public class RabbitMQEnvironment {
             }
         }
 
-        throw new RabbitMQException("[" + inboundName + "] Could not connect to RabbitMQ Broker. All retry attempts exhausted.");
+        throw new RabbitMQException("[" + inboundName + "] Could not connect to RabbitMQ Broker. " +
+                "All retry attempts exhausted.");
     }
 
     /**
@@ -466,11 +520,14 @@ public class RabbitMQEnvironment {
         // Retrieve the recovery policy type or use the default
         String policyType = rabbitMQProperties.getOrDefault(
                 RabbitMQConstants.CONNECTION_RECOVERY_POLICY,
-                String.valueOf(RabbitMQConstants.ConnectionRecoveryPolicy.FIXED_WITH_INITIAL_DELAY_AND_TIMEOUT)
+                String.valueOf(
+                        RabbitMQConstants.ConnectionRecoveryPolicy.FIXED_WITH_INITIAL_DELAY_AND_TIMEOUT
+                )
         );
         if (!rabbitMQProperties.containsKey(RabbitMQConstants.CONNECTION_RECOVERY_POLICY)) {
-            log.warn(logPrefix + " - " + RabbitMQConstants.CONNECTION_RECOVERY_POLICY + " is not provided. Using default: " +
-                    RabbitMQConstants.ConnectionRecoveryPolicy.FIXED_WITH_INITIAL_DELAY_AND_TIMEOUT);
+            log.warn(logPrefix + " - " + RabbitMQConstants.CONNECTION_RECOVERY_POLICY
+                    + " is not provided. Using default: "
+                    + RabbitMQConstants.ConnectionRecoveryPolicy.FIXED_WITH_INITIAL_DELAY_AND_TIMEOUT);
         }
 
         // Retrieve initial delay, retry interval, and timeout values or use defaults
@@ -489,21 +546,24 @@ public class RabbitMQEnvironment {
 
         // Log warnings if properties are not provided
         if (!rabbitMQProperties.containsKey(RabbitMQConstants.CONNECTION_RECOVERY_INITIAL_DELAY)) {
-            if(log.isDebugEnabled()) {
-                log.debug(logPrefix + " - " + RabbitMQConstants.CONNECTION_RECOVERY_INITIAL_DELAY + " is not provided. Using default: " +
-                        RabbitMQConstants.DEFAULT_CONNECTION_RECOVERY_INITIAL_DELAY + "ms");
+            if (log.isDebugEnabled()) {
+                log.debug(logPrefix + " - " + RabbitMQConstants.CONNECTION_RECOVERY_INITIAL_DELAY
+                        + " is not provided. Using default: "
+                        + RabbitMQConstants.DEFAULT_CONNECTION_RECOVERY_INITIAL_DELAY + "ms");
             }
         }
         if (!rabbitMQProperties.containsKey(RabbitMQConstants.CONNECTION_RECOVERY_RETRY_INTERVAL)) {
-            if(log.isDebugEnabled()) {
-                log.debug(logPrefix + " - " + RabbitMQConstants.CONNECTION_RECOVERY_RETRY_INTERVAL + " is not provided. Using default: " +
-                        RabbitMQConstants.DEFAULT_CONNECTION_RECOVERY_RETRY_INTERVAL + "ms");
+            if (log.isDebugEnabled()) {
+                log.debug(logPrefix + " - " + RabbitMQConstants.CONNECTION_RECOVERY_RETRY_INTERVAL
+                        + " is not provided. Using default: "
+                        + RabbitMQConstants.DEFAULT_CONNECTION_RECOVERY_RETRY_INTERVAL + "ms");
             }
         }
         if (!rabbitMQProperties.containsKey(RabbitMQConstants.CONNECTION_RECOVERY_RETRY_TIMEOUT)) {
-            if(log.isDebugEnabled()) {
-                log.debug(logPrefix + " - " + RabbitMQConstants.CONNECTION_RECOVERY_RETRY_TIMEOUT + " is not provided. Using default: " +
-                        RabbitMQConstants.DEFAULT_CONNECTION_RECOVERY_RETRY_TIMEOUT + "ms");
+            if (log.isDebugEnabled()) {
+                log.debug(logPrefix + " - " + RabbitMQConstants.CONNECTION_RECOVERY_RETRY_TIMEOUT
+                        + " is not provided. Using default: "
+                        + RabbitMQConstants.DEFAULT_CONNECTION_RECOVERY_RETRY_TIMEOUT + "ms");
             }
         }
 
@@ -515,14 +575,15 @@ public class RabbitMQEnvironment {
                 return BackOffDelayPolicy.fixedWithInitialDelay(initialDelay, delay);
             case FIXED_WITH_INITIAL_DELAY_AND_TIMEOUT:
             default:
-                return BackOffDelayPolicy.fixedWithInitialDelay(initialDelay, delay, timeout);
+                return BackOffDelayPolicy
+                        .fixedWithInitialDelay(initialDelay, delay, timeout);
         }
     }
 
     /**
      * Creates and initializes an SSLContext for OAuth2 authentication using the truststore details.
-     * This method retrieves truststore properties from system properties, validates them, and configures the SSLContext.
-     *
+     * This method retrieves truststore properties from system properties,
+     * validates them, and configures the SSLContext.
      * @return The initialized SSLContext instance for OAuth2 authentication.
      * @throws SynapseException If required truststore properties are missing or invalid.
      */
@@ -531,7 +592,10 @@ public class RabbitMQEnvironment {
             // Retrieve truststore properties from system properties
             String trustStore = System.getProperty(RabbitMQConstants.SERVER_TRUSTSTORE);
             String trustStorePassword = System.getProperty(RabbitMQConstants.SERVER_TRUSTSTORE_PASSWORD);
-            String trustStoreType = StringUtils.defaultIfEmpty(System.getProperty(RabbitMQConstants.SERVER_TRUSTSTORE_TYPE), KeyStore.getDefaultType());
+            String trustStoreType = StringUtils.defaultIfEmpty(
+                    System.getProperty(RabbitMQConstants.SERVER_TRUSTSTORE_TYPE),
+                    KeyStore.getDefaultType()
+            );
 
             // Initialize the TrustManagerFactory using the truststore details
             TrustManagerFactory tmf = initTrustManagerFactory(trustStore, trustStoreType, trustStorePassword);
@@ -558,10 +622,16 @@ public class RabbitMQEnvironment {
         try {
             // Retrieve SSL-related properties from the configuration
             String keyStoreLocation = rabbitMQProperties.get(RabbitMQConstants.SSL_KEYSTORE_LOCATION);
-            String keyStoreType = StringUtils.defaultIfEmpty(rabbitMQProperties.get(RabbitMQConstants.SSL_KEYSTORE_TYPE), RabbitMQConstants.DEFAULT_KEYSTORE_TYPE);
+            String keyStoreType = StringUtils.defaultIfEmpty(
+                    rabbitMQProperties.get(RabbitMQConstants.SSL_KEYSTORE_TYPE),
+                    RabbitMQConstants.DEFAULT_KEYSTORE_TYPE
+            );
             String keyStorePassword = rabbitMQProperties.get(RabbitMQConstants.SSL_KEYSTORE_PASSWORD);
             String trustStoreLocation = rabbitMQProperties.get(RabbitMQConstants.SSL_TRUSTSTORE_LOCATION);
-            String trustStoreType = StringUtils.defaultIfEmpty(rabbitMQProperties.get(RabbitMQConstants.SSL_TRUSTSTORE_TYPE), RabbitMQConstants.DEFAULT_KEYSTORE_TYPE);
+            String trustStoreType = StringUtils.defaultIfEmpty(
+                    rabbitMQProperties.get(RabbitMQConstants.SSL_TRUSTSTORE_TYPE),
+                    RabbitMQConstants.DEFAULT_KEYSTORE_TYPE
+            );
             String trustStorePassword = rabbitMQProperties.get(RabbitMQConstants.SSL_TRUSTSTORE_PASSWORD);
             String sslVersion = rabbitMQProperties.get(RabbitMQConstants.SSL_VERSION);
 
@@ -590,14 +660,20 @@ public class RabbitMQEnvironment {
             String effectiveSslVersion = StringUtils.defaultIfEmpty(sslVersion, RabbitMQConstants.DEFAULT_SSL_VERSION);
             try {
                 if (StringUtils.isEmpty(sslVersion)) {
-                    log.warn(logPrefix + " - " + RabbitMQConstants.SSL_VERSION + " is not specified. Hence using default SSL version: " + effectiveSslVersion);
+                    log.warn(logPrefix + " - " + RabbitMQConstants.SSL_VERSION
+                            + " is not specified. Hence using default SSL version: "
+                            + effectiveSslVersion);
                 }
                 // Initialize the SSLContext with the KeyManager and TrustManager
                 sslContext = SSLContext.getInstance(effectiveSslVersion);
                 sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
             } catch (NoSuchAlgorithmException e) {
-                throw new SynapseException("Invalid SSL version: " + effectiveSslVersion + ". Available SSL versions are: "
-                        + String.join(", ", SSLContext.getDefault().getSupportedSSLParameters().getProtocols()), e);
+                throw new SynapseException("Invalid SSL version: " + effectiveSslVersion
+                        + ". Available SSL versions are: " + String.join(
+                                ", ",
+                        SSLContext.getDefault().getSupportedSSLParameters().getProtocols()),
+                        e
+                );
             }
         } catch (Exception e) {
             log.error("Format error in SSL enabled value.", e);
@@ -615,7 +691,9 @@ public class RabbitMQEnvironment {
      * @return The initialized `KeyManagerFactory` instance.
      * @throws Exception If an error occurs during initialization.
      */
-    private KeyManagerFactory initKeyManagerFactory(String location, String type, String password) throws Exception {
+    private KeyManagerFactory initKeyManagerFactory(String location,
+                                                    String type,
+                                                    String password) throws Exception {
         KeyStore ks = KeyStore.getInstance(type);
         ks.load(Files.newInputStream(Paths.get(location)), password.toCharArray());
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
@@ -632,7 +710,9 @@ public class RabbitMQEnvironment {
      * @return The initialized `TrustManagerFactory` instance.
      * @throws Exception If an error occurs during initialization.
      */
-    private TrustManagerFactory initTrustManagerFactory(String location, String type, String password) throws Exception {
+    private TrustManagerFactory initTrustManagerFactory(String location,
+                                                        String type,
+                                                        String password) throws Exception {
         KeyStore tks = KeyStore.getInstance(type);
         tks.load(Files.newInputStream(Paths.get(location)), password.toCharArray());
         TrustManagerFactory tmf = TrustManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());

@@ -22,7 +22,7 @@ package org.wso2.carbon.inbound.rabbitmq;
  * It provides constructors to create exceptions with messages and/or
  * underlying causes.
  */
-public class RabbitMQException extends Exception{
+public class RabbitMQException extends Exception {
 
     /**
      * Create an exception with given exception message

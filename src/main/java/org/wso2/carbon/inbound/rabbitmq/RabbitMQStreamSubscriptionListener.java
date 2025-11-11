@@ -42,7 +42,8 @@ public class RabbitMQStreamSubscriptionListener implements ConsumerBuilder.Subsc
      * @param registryOffsetTracker The tracker to manage registry offsets.
      * @param rabbitMqProperties    The RabbitMQ properties.
      */
-    public RabbitMQStreamSubscriptionListener(RabbitMQRegistryOffsetTracker registryOffsetTracker, Properties rabbitMqProperties) {
+    public RabbitMQStreamSubscriptionListener(RabbitMQRegistryOffsetTracker registryOffsetTracker,
+                                              Properties rabbitMqProperties) {
         this.registryOffsetTracker = registryOffsetTracker;
         this.rabbitMqProperties = rabbitMqProperties;
     }

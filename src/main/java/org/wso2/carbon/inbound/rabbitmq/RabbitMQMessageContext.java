@@ -51,11 +51,11 @@ public class RabbitMQMessageContext {
         this.correlationId = message.correlationIdAsString();
         this.replyTo = message.replyTo();
         this.hasAnnotations = message.hasAnnotations();
-        if(message.hasAnnotations()) {
+        if (message.hasAnnotations()) {
             message.forEachAnnotation(annotations::put);
         }
         this.hasProperties = message.hasProperties();
-        if( message.hasProperties()) {
+        if (message.hasProperties()) {
             message.forEachProperty(applicationProperties::put);
         }
 

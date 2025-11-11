@@ -49,40 +49,54 @@ public class RabbitMQConnectionStateListener implements Resource.StateListener {
     public void handle(Resource.Context context) {
 
         // Handle transition from OPEN to RECOVERING state
-        if (context.currentState() == Resource.State.RECOVERING && context.previousState() == Resource.State.OPEN) {
-            log.info("[" + inboundName + "] inbound endpoint connection to the RabbitMQ broker started to recover.");
+        if (context.currentState() == Resource.State.RECOVERING &&
+                context.previousState() == Resource.State.OPEN) {
+            log.info("[" + inboundName + "] inbound endpoint connection " +
+                    "to the RabbitMQ broker started to recover.");
         }
 
         // Handle transition from RECOVERING to OPEN state
-        if (context.currentState() == Resource.State.OPEN && context.previousState() == Resource.State.RECOVERING) {
-            log.info("[" + inboundName + "] inbound endpoint connection to the RabbitMQ broker was recovered.");
+        if (context.currentState() == Resource.State.OPEN &&
+                context.previousState() == Resource.State.RECOVERING) {
+            log.info("[" + inboundName + "] inbound endpoint connection " +
+                    "to the RabbitMQ broker was recovered.");
         }
 
         // Handle transition from null to OPENING state
-        if (context.currentState() == Resource.State.OPENING && context.previousState() == null) {
-            log.info("[" + inboundName + "] inbound endpoint connection to the RabbitMQ broker is opening.");
+        if (context.currentState() == Resource.State.OPENING &&
+                context.previousState() == null) {
+            log.info("[" + inboundName + "] inbound endpoint connection " +
+                    "to the RabbitMQ broker is opening.");
         }
 
         // Handle transition from OPENING to OPEN state
-        if (context.currentState() == Resource.State.OPEN && context.previousState() == Resource.State.OPENING) {
-            log.info("[" + inboundName + "] inbound endpoint connection to the RabbitMQ broker is established.");
+        if (context.currentState() == Resource.State.OPEN &&
+                context.previousState() == Resource.State.OPENING) {
+            log.info("[" + inboundName + "] inbound endpoint connection " +
+                    "to the RabbitMQ broker is established.");
         }
 
         // Handle transition from OPEN to CLOSING state
-        if (context.currentState() == Resource.State.CLOSING && context.previousState() == Resource.State.OPEN) {
+        if (context.currentState() == Resource.State.CLOSING &&
+                context.previousState() == Resource.State.OPEN) {
             if (context.failureCause() != null) {
-                log.warn("[" + inboundName + "] inbound endpoint connection to the RabbitMQ broker is closing due to: " + context.failureCause());
+                log.warn("[" + inboundName + "] inbound endpoint connection to the " +
+                        "RabbitMQ broker is closing due to: " + context.failureCause());
             } else {
-                log.info("[" + inboundName + "] inbound endpoint connection to the RabbitMQ broker is closing.");
+                log.info("[" + inboundName + "] inbound endpoint connection " +
+                        "to the RabbitMQ broker is closing.");
             }
         }
 
         // Handle transition from CLOSING to CLOSED state
-        if (context.currentState() == Resource.State.CLOSED && context.previousState() == Resource.State.CLOSING) {
+        if (context.currentState() == Resource.State.CLOSED &&
+                context.previousState() == Resource.State.CLOSING) {
             if (context.failureCause() == null) {
-                log.info("[" + inboundName + "] inbound endpoint connection to the RabbitMQ broker is closed.");
+                log.info("[" + inboundName + "] inbound endpoint connection " +
+                        "to the RabbitMQ broker is closed.");
             } else {
-                log.warn("[" + inboundName + "] inbound endpoint connection to the RabbitMQ broker is closed due to: " + context.failureCause());
+                log.warn("[" + inboundName + "] inbound endpoint connection to the " +
+                        "RabbitMQ broker is closed due to: " + context.failureCause());
             }
         }
     }

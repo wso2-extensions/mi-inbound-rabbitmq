@@ -31,7 +31,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This class is responsible for tracking and managing RabbitMQ stream offsets in memory and in the registry.
- * It periodically flushes the current offset to the registry and provides methods to store, retrieve, and update offsets.
+ * It periodically flushes the current offset to the registry and
+ * provides methods to store, retrieve, and update offsets.
  */
 public class RabbitMQRegistryOffsetTracker {
 
@@ -53,7 +54,8 @@ public class RabbitMQRegistryOffsetTracker {
      * @param rabbitMqProperties The RabbitMQ properties.
      * @param name               The name of the resource in the registry.
      */
-    public RabbitMQRegistryOffsetTracker(AbstractRegistry registry, Properties rabbitMqProperties, String name) {
+    public RabbitMQRegistryOffsetTracker(AbstractRegistry registry,
+                                         Properties rabbitMqProperties, String name) {
         this.registry = registry;
         this.rabbitMqProperties = rabbitMqProperties;
         this.registryPath = RabbitMQConstants.REGISTRY_PATH + "/" + name;
@@ -67,8 +69,10 @@ public class RabbitMQRegistryOffsetTracker {
             try {
                 interval = Long.parseLong(intervalStr.trim());
             } catch (NumberFormatException e) {
-                log.warn("["+inboundName+"] Invalid value for " + RabbitMQConstants.STREAM_OFFSET_TRACKER_FLUSH_INTERVAL +
-                        ": '" + intervalStr + "'. Using default: " + RabbitMQConstants.DEFAULT_STREAM_OFFSET_TRACKER_FLUSH_INTERVAL, e);
+                log.warn("[" + inboundName + "] Invalid value for "
+                        + RabbitMQConstants.STREAM_OFFSET_TRACKER_FLUSH_INTERVAL
+                        + ": '" + intervalStr + "'. Using default: "
+                        + RabbitMQConstants.DEFAULT_STREAM_OFFSET_TRACKER_FLUSH_INTERVAL, e);
                 interval = RabbitMQConstants.DEFAULT_STREAM_OFFSET_TRACKER_FLUSH_INTERVAL;
             }
         } else {
@@ -121,12 +125,17 @@ public class RabbitMQRegistryOffsetTracker {
         // Check if the registry resource exists
         Object registryResource = registry.getResource(new Entry(resourcePath), null);
         if (registryResource == null) {
-            log.info("["+inboundName+"] Registry resource not found. Creating new resource: " + resourcePath);
+            log.info("[" + inboundName + "] Registry resource not found. Creating new resource: " + resourcePath);
             registry.newResource(registryPath, true);
         }
 
         // Update the registry with the new offset
-        registry.newNonEmptyResource(resourcePath, false, "text/plain", String.valueOf(offset), RabbitMQConstants.PROPERTY_NAME);
+        registry.newNonEmptyResource(
+                resourcePath,
+                false,
+                "text/plain",
+                String.valueOf(offset), RabbitMQConstants.PROPERTY_NAME
+        );
         previousOffset = offset;
     }
 
@@ -142,14 +151,16 @@ public class RabbitMQRegistryOffsetTracker {
 
         // Return the default strategy if the registry is unavailable
         if (registry == null) {
-            log.warn("["+inboundName+"] Registry is not available. Message consuming starts based on the consumer strategy: " + offsetStrategy);
+            log.warn("[" + inboundName + "] Registry is not available. " +
+                    "Message consuming starts based on the consumer strategy: " + offsetStrategy);
             return offsetStrategy;
         }
 
         // Retrieve the registry resource
         Object registryResource = registry.getResource(new Entry(resourcePath), null);
         if (registryResource == null) {
-            log.warn("["+inboundName+"] Offset is not specified in the registry. Message consuming starts based on the consumer strategy: " + offsetStrategy);
+            log.warn("[" + inboundName + "] Offset is not specified in the registry. " +
+                    "Message consuming starts based on the consumer strategy: " + offsetStrategy);
             return offsetStrategy;
         }
 
@@ -163,7 +174,8 @@ public class RabbitMQRegistryOffsetTracker {
         try {
             return Long.parseLong(offsetStr);
         } catch (NumberFormatException e) {
-            log.warn("["+inboundName+"] Offset in the registry is not a valid number. Message consuming starts based on the consumer strategy: " + offsetStrategy);
+            log.warn("[" + inboundName + "] Offset in the registry is not a valid number." +
+                    " Message consuming starts based on the consumer strategy: " + offsetStrategy);
             return offsetStrategy;
         }
     }
@@ -176,12 +188,16 @@ public class RabbitMQRegistryOffsetTracker {
         try {
             // Determine the shutdown timeout from properties or use the default value
             long timeout;
-            String timeoutStr = rabbitMqProperties.getProperty(RabbitMQConstants.STREAM_OFFSET_TRACKER_SHUTDOWN_TIMEOUT);
+            String timeoutStr = rabbitMqProperties
+                    .getProperty(RabbitMQConstants.STREAM_OFFSET_TRACKER_SHUTDOWN_TIMEOUT);
             if (timeoutStr != null) {
                 try {
                     timeout = Long.parseLong(timeoutStr);
                 } catch (NumberFormatException e) {
-                    log.warn("["+inboundName+"] Shutdown timeout property is not a valid number. Using default value: " + RabbitMQConstants.DEFAULT_STREAM_OFFSET_TRACKER_SHUTDOWN_TIMEOUT);
+                    log.warn("[" + inboundName + "] Shutdown timeout property is not a valid number."
+                            + " Using default value: "
+                            + RabbitMQConstants.DEFAULT_STREAM_OFFSET_TRACKER_SHUTDOWN_TIMEOUT
+                    );
                     timeout = RabbitMQConstants.DEFAULT_STREAM_OFFSET_TRACKER_SHUTDOWN_TIMEOUT;
                 }
             } else {

@@ -30,8 +30,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.synapse.core.SynapseEnvironment;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
-import org.wso2.carbon.inbound.rabbitmq.*;
+import org.wso2.carbon.inbound.rabbitmq.RabbitMQAcknowledgementMode;
+import org.wso2.carbon.inbound.rabbitmq.RabbitMQConstants;
+import org.wso2.carbon.inbound.rabbitmq.RabbitMQMessageContext;
+import org.wso2.carbon.inbound.rabbitmq.RabbitMQRegistryOffsetTracker;
+import org.wso2.carbon.inbound.rabbitmq.RabbitMQRoundRobinAddressSelector;
 import org.wso2.carbon.inbound.rabbitmq.message.handler.AbstractRabbitMQMessageHandler;
+
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -63,12 +68,15 @@ public class StreamQueueMessageHandler extends AbstractRabbitMQMessageHandler {
      * @param registryOffsetTracker The offset tracker for the registry.
      */
     public StreamQueueMessageHandler(String inboundName, String injectingSeq, String onErrorSeq, boolean sequential,
-                                     SynapseEnvironment synapseEnvironment, Properties rabbitMQProperties, RabbitMQRoundRobinAddressSelector addressSelector, RabbitMQRegistryOffsetTracker registryOffsetTracker) {
+                                     SynapseEnvironment synapseEnvironment, Properties rabbitMQProperties,
+                                     RabbitMQRoundRobinAddressSelector addressSelector,
+                                     RabbitMQRegistryOffsetTracker registryOffsetTracker) {
         super(inboundName, injectingSeq, onErrorSeq, true, synapseEnvironment, rabbitMQProperties, addressSelector);
 
         // Log a warning if sequential processing is disabled, as stream queues only support sequential processing
         if (!sequential) {
-            log.warn("[" + inboundName + "] Stream queues only support sequential processing. Hence changing the 'sequential' property to true for the inbound endpoint: " + inboundName);
+            log.warn("[" + inboundName + "] Stream queues only support sequential processing. " +
+                    "Hence changing the 'sequential' property to true for the inbound endpoint: " + inboundName);
         }
 
         // Initialize the registry offset tracker
@@ -88,10 +96,11 @@ public class StreamQueueMessageHandler extends AbstractRabbitMQMessageHandler {
         // Retrieve the current RabbitMQ address
         Address address = addressSelector.getCurrentAddress();
 
-        RabbitMQAcknowledgementMode acknowledgementMode = null;
+        RabbitMQAcknowledgementMode acknowledgementMode;
 
         // Create a RabbitMQ message context
-        RabbitMQMessageContext rabbitMQMsgCtx = new RabbitMQMessageContext(message, address.host(), address.port(), this.queue);
+        RabbitMQMessageContext rabbitMQMsgCtx = new RabbitMQMessageContext(message, address.host(),
+                 address.port(), this.queue);
 
         // Create a Synapse message context
         org.apache.synapse.MessageContext synapseMsgCtx = createMessageContext();
@@ -100,7 +109,8 @@ public class StreamQueueMessageHandler extends AbstractRabbitMQMessageHandler {
         // Retrieve stream filter values and properties
         String filterValue = (String) message.annotation(RabbitMQConstants.STREAM_FILTER_VALUE_ANNOTATION);
         String streamFilters = rabbitMQProperties.getProperty(RabbitMQConstants.STREAM_FILTERS);
-        boolean matchUnfiltered = BooleanUtils.toBoolean(rabbitMQProperties.getProperty(RabbitMQConstants.STREAM_FILTER_MATCH_UNFILTERED));
+        boolean matchUnfiltered = BooleanUtils
+                .toBoolean(rabbitMQProperties.getProperty(RabbitMQConstants.STREAM_FILTER_MATCH_UNFILTERED));
 
         // Check if stream filters are defined
         if (StringUtils.isNotEmpty(streamFilters)) {
@@ -140,7 +150,8 @@ public class StreamQueueMessageHandler extends AbstractRabbitMQMessageHandler {
      * @param acknowledgementMode The acknowledgment mode.
      */
     @Override
-    protected void handleAcknowledgement(MessageContext axis2MsgCtx, RabbitMQMessageContext rabbitMQMsgCtx, Consumer.Context context, RabbitMQAcknowledgementMode acknowledgementMode) {
+    protected void handleAcknowledgement(MessageContext axis2MsgCtx, RabbitMQMessageContext rabbitMQMsgCtx,
+                                         Consumer.Context context, RabbitMQAcknowledgementMode acknowledgementMode) {
         switch (Objects.requireNonNull(acknowledgementMode)) {
             case ACCEPTED:
                 // Accept the message
@@ -148,12 +159,20 @@ public class StreamQueueMessageHandler extends AbstractRabbitMQMessageHandler {
                 break;
             case REQUEUE:
                 // Log a warning and accept the message, as requeue is not supported for stream queues
-                log.warn("[" + inboundName + "] Requeue is not supported with the STREAM Type queues, hence accepting the message and moving forward. If you want to retrieve the failure message again please configure the offset to current offset: " + registryOffsetTracker.getCurrentOffset() + " to and redeploy the inbound endpoint.");
+                log.warn("[" + inboundName + "] Requeue is not supported with the STREAM Type queues, " +
+                        "hence accepting the message and moving forward. " +
+                        "If you want to retrieve the failure message again " +
+                        "please configure the offset to current offset: " + registryOffsetTracker.getCurrentOffset() +
+                        " to and redeploy the inbound endpoint.");
                 context.accept();
                 break;
             case DISCARDED:
                 // Log a warning and accept the message, as discard is not supported for stream queues
-                log.warn("[" + inboundName + "] Discard is not supported with the STREAM Type queues, hence accepting the message and moving forward. If you want to retrieve the failure message again please configure the offset to current offset: " + registryOffsetTracker.getCurrentOffset() + " to and redeploy the inbound endpoint.");
+                log.warn("[" + inboundName + "] Discard is not supported with the STREAM Type queues, " +
+                        "hence accepting the message and moving forward. " +
+                        "If you want to retrieve the failure message again " +
+                        "please configure the offset to current offset: " + registryOffsetTracker.getCurrentOffset()  +
+                        "to and redeploy the inbound endpoint.");
                 context.accept();
                 break;
             default:

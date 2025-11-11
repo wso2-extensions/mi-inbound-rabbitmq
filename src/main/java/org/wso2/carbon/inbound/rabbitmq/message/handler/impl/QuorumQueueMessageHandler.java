@@ -30,8 +30,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.synapse.core.SynapseEnvironment;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
-import org.wso2.carbon.inbound.rabbitmq.*;
+import org.wso2.carbon.inbound.rabbitmq.RabbitMQAcknowledgementMode;
+import org.wso2.carbon.inbound.rabbitmq.RabbitMQConstants;
+import org.wso2.carbon.inbound.rabbitmq.RabbitMQMessageContext;
+import org.wso2.carbon.inbound.rabbitmq.RabbitMQRoundRobinAddressSelector;
 import org.wso2.carbon.inbound.rabbitmq.message.handler.AbstractRabbitMQMessageHandler;
+
 
 import java.util.Objects;
 import java.util.Properties;
@@ -59,8 +63,10 @@ public class QuorumQueueMessageHandler extends AbstractRabbitMQMessageHandler {
          * @param addressSelector    The address selector for RabbitMQ.
          */
         public QuorumQueueMessageHandler(String inboundName, String injectingSeq, String onErrorSeq, boolean sequential,
-                                         SynapseEnvironment synapseEnvironment, Properties rabbitMQProperties, RabbitMQRoundRobinAddressSelector addressSelector) {
-            super(inboundName, injectingSeq, onErrorSeq, sequential, synapseEnvironment, rabbitMQProperties, addressSelector);
+                                         SynapseEnvironment synapseEnvironment, Properties rabbitMQProperties,
+                                         RabbitMQRoundRobinAddressSelector addressSelector) {
+            super(inboundName, injectingSeq, onErrorSeq, sequential,
+                    synapseEnvironment, rabbitMQProperties, addressSelector);
         }
 
         /**
@@ -79,7 +85,8 @@ public class QuorumQueueMessageHandler extends AbstractRabbitMQMessageHandler {
             RabbitMQAcknowledgementMode acknowledgementMode = null;
 
             // Create a RabbitMQ message context
-            RabbitMQMessageContext rabbitMQMsgCtx = new RabbitMQMessageContext(message, address.host(), address.port(), this.queue);
+            RabbitMQMessageContext rabbitMQMsgCtx = new RabbitMQMessageContext(message,
+                    address.host(), address.port(), this.queue);
 
             // Create a Synapse message context
             org.apache.synapse.MessageContext synapseMsgCtx = createMessageContext();
@@ -102,10 +109,14 @@ public class QuorumQueueMessageHandler extends AbstractRabbitMQMessageHandler {
          * @param acknowledgementMode The acknowledgment mode.
          */
         @Override
-        protected void handleAcknowledgement(MessageContext axis2MsgCtx, RabbitMQMessageContext rabbitMQMsgCtx, Consumer.Context context, RabbitMQAcknowledgementMode acknowledgementMode) {
+        protected void handleAcknowledgement(MessageContext axis2MsgCtx,
+                                             RabbitMQMessageContext rabbitMQMsgCtx,
+                                             Consumer.Context context,
+                                             RabbitMQAcknowledgementMode acknowledgementMode) {
 
             // Retrieve the message ID for logging purposes
-            String messageID = rabbitMQMsgCtx.getMessageID() != null ? rabbitMQMsgCtx.getMessageID() : axis2MsgCtx.getMessageID();
+            String messageID = rabbitMQMsgCtx.getMessageID() != null ?
+                    rabbitMQMsgCtx.getMessageID() : axis2MsgCtx.getMessageID();
 
             // Handle acknowledgment based on the mode
             switch (Objects.requireNonNull(acknowledgementMode)) {
@@ -116,18 +127,21 @@ public class QuorumQueueMessageHandler extends AbstractRabbitMQMessageHandler {
                 case REQUEUE:
                     // Delay requeue if the delay property is set
                     if (rabbitMQProperties.containsKey(RabbitMQConstants.MESSAGE_REQUEUE_DELAY)) {
+                        String delayValue = rabbitMQProperties.getProperty(RabbitMQConstants.MESSAGE_REQUEUE_DELAY);
                         try {
-                            String delayStr = rabbitMQProperties.getProperty(RabbitMQConstants.MESSAGE_REQUEUE_DELAY);
-                            long delay = 0L;
-                            try {
-                                delay = Long.parseLong(delayStr);
+                            if (delayValue != null) {
+                                long delay = Long.parseLong(delayValue);
                                 Thread.sleep(delay);
-                            } catch (NumberFormatException nfe) {
-                                log.warn("[" + inboundName + "] Invalid rabbitmq.message.requeue.delay value: '" + delayStr + "' for message id: " + messageID, nfe);
-                                // Optionally, skip sleep or use a default value
+                            } else {
+                                log.warn("[" + inboundName + "] Requeue delay value is null for message id: "
+                                        + messageID + ". Skipping delay.");
                             }
+                        } catch (NumberFormatException ex) {
+                            log.warn("[" + inboundName + "] Invalid requeue delay value '" + delayValue + "' for" +
+                                    " message id: " + messageID + ". Skipping delay.", ex);
                         } catch (InterruptedException ex) {
-                            log.warn("[" + inboundName + "] Thread has been interrupted while delaying message requeue for message id: " + messageID, ex);
+                            log.warn("[" + inboundName + "] Thread has been interrupted " +
+                                    "while delaying message requeue for message id: " + messageID, ex);
                         }
                     }
                     // Requeue the message

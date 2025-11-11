@@ -22,6 +22,7 @@ import com.rabbitmq.client.amqp.Consumer;
 import com.rabbitmq.client.amqp.Message;
 import org.apache.axis2.AxisFault;
 import org.apache.axis2.context.MessageContext;
+import org.apache.axis2.transport.base.AckDecision;
 import org.apache.axis2.transport.base.AckDecisionCallback;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -30,7 +31,6 @@ import org.apache.synapse.SynapseException;
 import org.apache.synapse.aspects.flow.statistics.collectors.RuntimeStatisticCollector;
 import org.apache.synapse.core.SynapseEnvironment;
 import org.apache.synapse.mediators.base.SequenceMediator;
-import org.apache.axis2.transport.base.AckDecision;
 import org.wso2.carbon.inbound.rabbitmq.RabbitMQAcknowledgementMode;
 import org.wso2.carbon.inbound.rabbitmq.RabbitMQConstants;
 import org.wso2.carbon.inbound.rabbitmq.RabbitMQMessageContext;
@@ -62,35 +62,40 @@ public abstract class AbstractRabbitMQMessageHandler implements Consumer.Message
     protected final Properties rabbitMQProperties;
 
     // Constructor to initialize the AbstractRabbitMQMessageHandler with necessary configurations
-    public AbstractRabbitMQMessageHandler(String inboundName, String injectingSeq, String onErrorSeq, boolean sequential,
-                                          SynapseEnvironment synapseEnvironment, Properties rabbitMQProperties, RabbitMQRoundRobinAddressSelector addressSelector) {
+    public AbstractRabbitMQMessageHandler(String inboundName, String injectingSeq,
+                                          String onErrorSeq, boolean sequential,
+                                          SynapseEnvironment synapseEnvironment,
+                                          Properties rabbitMQProperties,
+                                          RabbitMQRoundRobinAddressSelector addressSelector) {
         this.inboundName = inboundName; // Set the inbound endpoint name
         this.injectingSeq = injectingSeq; // Set the injecting sequence name
 
         // Validate that the injecting sequence is specified
         if (injectingSeq == null || injectingSeq.isEmpty()) {
-            String msg = "[" + inboundName + "] Injecting Sequence name is not specified."; // Error message for missing injecting sequence
+            // Error message for missing injecting sequence
+            String msg = "[" + inboundName + "] Injecting Sequence name is not specified.";
             log.error(msg); // Log the error
             throw new SynapseException(msg); // Throw an exception
         }
 
         // Retrieve and initialize the injecting sequence
-        seq = (SequenceMediator) synapseEnvironment.getSynapseConfiguration().getSequence(injectingSeq); // Get the sequence from the Synapse configuration
+        seq = (SequenceMediator) synapseEnvironment.getSynapseConfiguration().getSequence(injectingSeq);
         if (seq == null) {
-            throw new SynapseException("Specified injecting sequence: " + injectingSeq + "is invalid."); // Throw an exception if the sequence is invalid
+            throw new SynapseException("Specified injecting sequence: " + injectingSeq + "is invalid.");
         }
         if (!seq.isInitialized()) {
-            seq.init(synapseEnvironment); // Initialize the sequence if not already initialized
+            // Initialize the sequence if not already initialized
+            seq.init(synapseEnvironment);
         }
 
-        this.onErrorSeq = onErrorSeq; // Set the error sequence name
-        this.sequential = sequential; // Set whether the processing is sequential
-        this.synapseEnvironment = synapseEnvironment; // Set the Synapse environment
-        this.addressSelector = addressSelector; // Set the RabbitMQ address selector
-        this.rabbitMQProperties = rabbitMQProperties; // Set the RabbitMQ properties
+        this.onErrorSeq = onErrorSeq;
+        this.sequential = sequential;
+        this.synapseEnvironment = synapseEnvironment;
+        this.addressSelector = addressSelector;
+        this.rabbitMQProperties = rabbitMQProperties;
 
         // Retrieve the queue name from RabbitMQ properties
-        this.queue = rabbitMQProperties.getProperty(RabbitMQConstants.QUEUE_NAME); // Get the queue name
+        this.queue = rabbitMQProperties.getProperty(RabbitMQConstants.QUEUE_NAME);
     }
 
 
@@ -104,7 +109,10 @@ public abstract class AbstractRabbitMQMessageHandler implements Consumer.Message
      * @param inboundName            The name of the inbound endpoint.
      * @return The delivery status of the message.
      */
-    public RabbitMQAcknowledgementMode onMessage(org.apache.synapse.MessageContext synapseMsgCtx, MessageContext axis2MsgCtx, RabbitMQMessageContext rabbitMQMessageContext, String inboundName) {
+    public RabbitMQAcknowledgementMode onMessage(org.apache.synapse.MessageContext synapseMsgCtx,
+                                                 MessageContext axis2MsgCtx,
+                                                 RabbitMQMessageContext rabbitMQMessageContext,
+                                                 String inboundName) {
         try {
             // Build the RabbitMQ message and set transport headers
             RabbitMQUtils.buildMessage(rabbitMQMessageContext, axis2MsgCtx, rabbitMQProperties);
@@ -145,7 +153,8 @@ public abstract class AbstractRabbitMQMessageHandler implements Consumer.Message
                     try {
                         ackWaitTime = Long.parseLong(ackWaitTimeStr);
                     } catch (NumberFormatException e) {
-                        log.warn("[" + inboundName + "] Invalid value for " + RabbitMQConstants.ACK_MAX_WAIT_TIME + " : '" + ackWaitTimeStr
+                        log.warn("[" + inboundName + "] Invalid value for "
+                                + RabbitMQConstants.ACK_MAX_WAIT_TIME + " : '" + ackWaitTimeStr
                                 + "'. Using default value: " + RabbitMQConstants.DEFAULT_ACK_MAX_WAIT_TIME, e);
                         ackWaitTime = RabbitMQConstants.DEFAULT_ACK_MAX_WAIT_TIME;
                     }
@@ -207,7 +216,8 @@ public abstract class AbstractRabbitMQMessageHandler implements Consumer.Message
      * @param synCtx                 The Synapse message context.
      * @param rabbitMQMessageContext The RabbitMQ message context.
      */
-    protected void populateStatisticsMetadata(org.apache.synapse.MessageContext synCtx, RabbitMQMessageContext rabbitMQMessageContext) {
+    protected void populateStatisticsMetadata(org.apache.synapse.MessageContext synCtx,
+                                              RabbitMQMessageContext rabbitMQMessageContext) {
         // Populate statistics metadata with RabbitMQ message details
         Map<String, Object> statisticsDetails = new HashMap<>();
         statisticsDetails.put(SynapseConstants.HOSTNAME, rabbitMQMessageContext.getHost());
@@ -233,7 +243,8 @@ public abstract class AbstractRabbitMQMessageHandler implements Consumer.Message
      * @param ackDecision The acknowledgment decision.
      * @param msgContext  The Synapse message context.
      */
-    protected void setAckDecisionProperty(AckDecision ackDecision, org.apache.synapse.MessageContext msgContext) {
+    protected void setAckDecisionProperty(AckDecision ackDecision,
+                                          org.apache.synapse.MessageContext msgContext) {
         // Retrieve the acknowledgment mode as a string value
         String acknowledgementMode = ackDecision.toStringValue();
 
@@ -287,7 +298,8 @@ public abstract class AbstractRabbitMQMessageHandler implements Consumer.Message
      * @param messageContext The Synapse message context.
      * @return True if the property is set, false otherwise.
      */
-    protected boolean isBooleanPropertySet(String propertyName, org.apache.synapse.MessageContext messageContext) {
+    protected boolean isBooleanPropertySet(String propertyName,
+                                           org.apache.synapse.MessageContext messageContext) {
         // Retrieve the property value from the message context
         Object property = messageContext.getProperty(propertyName);
         // Check if the property is a Boolean and true, or a String that can be parsed as true
@@ -303,7 +315,10 @@ public abstract class AbstractRabbitMQMessageHandler implements Consumer.Message
      * @param context             The RabbitMQ consumer context.
      * @param acknowledgementMode The acknowledgment mode.
      */
-    abstract protected void handleAcknowledgement(MessageContext axis2MsgCtx, RabbitMQMessageContext rabbitMQMsgCtx, Consumer.Context context, RabbitMQAcknowledgementMode acknowledgementMode);
+    protected abstract void handleAcknowledgement(MessageContext axis2MsgCtx,
+                                                  RabbitMQMessageContext rabbitMQMsgCtx,
+                                                  Consumer.Context context,
+                                                  RabbitMQAcknowledgementMode acknowledgementMode);
 
 
     /**
@@ -315,7 +330,9 @@ public abstract class AbstractRabbitMQMessageHandler implements Consumer.Message
      * @return A new Message object with the cloned properties and annotations.
      */
 
-    protected Message cloneMessageWithContext(RabbitMQMessageContext originalContext, Message newMessage, boolean includeXDeathAnnotation) {
+    protected Message cloneMessageWithContext(RabbitMQMessageContext originalContext,
+                                              Message newMessage,
+                                              boolean includeXDeathAnnotation) {
 
         // Copy annotations from the original context to the new message
         if (originalContext.hasAnnotations()) {
@@ -354,12 +371,12 @@ public abstract class AbstractRabbitMQMessageHandler implements Consumer.Message
         }
 
         // Set additional properties in the new message
-        newMessage.correlationId(originalContext.getCorrelationId()); // Set the correlation ID
-        newMessage.replyTo(originalContext.getReplyTo()); // Set the reply-to address
-        newMessage.contentType(originalContext.getContentType()); // Set the content type
-        newMessage.contentEncoding(originalContext.getContentEncoding()); // Set the content encoding
+        newMessage.correlationId(originalContext.getCorrelationId());
+        newMessage.replyTo(originalContext.getReplyTo());
+        newMessage.contentType(originalContext.getContentType());
+        newMessage.contentEncoding(originalContext.getContentEncoding());
 
-        return newMessage; // Return the newly populated message
+        return newMessage;
     }
 
 

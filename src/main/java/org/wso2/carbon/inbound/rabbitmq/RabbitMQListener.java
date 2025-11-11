@@ -19,8 +19,8 @@ package org.wso2.carbon.inbound.rabbitmq;
 
 
 import com.rabbitmq.client.amqp.AmqpException;
-import com.rabbitmq.client.amqp.Consumer;
 import com.rabbitmq.client.amqp.Connection;
+import com.rabbitmq.client.amqp.Consumer;
 import com.rabbitmq.client.amqp.Management;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.math.NumberUtils;
@@ -82,9 +82,17 @@ public class RabbitMQListener extends GenericEventBasedConsumer {
 
         // Set coordination and sequential properties with defaults if not specified
         this.sequential = BooleanUtils.toBooleanDefaultIfNull(
-                BooleanUtils.toBooleanObject(rabbitmqProperties.getProperty(PollingConstants.INBOUND_ENDPOINT_SEQUENTIAL)), true);
+                BooleanUtils.toBooleanObject(
+                        rabbitmqProperties.getProperty(PollingConstants.INBOUND_ENDPOINT_SEQUENTIAL)
+                ),
+                true
+        );
         this.coordination = BooleanUtils.toBooleanDefaultIfNull(
-                BooleanUtils.toBooleanObject(rabbitmqProperties.getProperty(PollingConstants.INBOUND_COORDINATION)), true);
+                BooleanUtils.toBooleanObject(
+                        rabbitmqProperties.getProperty(PollingConstants.INBOUND_COORDINATION)
+                ),
+                true
+        );
 
         // Initialize the RabbitMQ environment
         initializeRabbitMQEnvironment();
@@ -146,7 +154,8 @@ public class RabbitMQListener extends GenericEventBasedConsumer {
             }
         }
 
-        log.info("[" + name + "] Starting to listen to the RabbitMQ queue: " + rabbitmqProperties.getProperty(RabbitMQConstants.QUEUE_NAME));
+        log.info("[" + name + "] Starting to listen to the RabbitMQ queue: "
+                + rabbitmqProperties.getProperty(RabbitMQConstants.QUEUE_NAME));
     }
 
     /**
@@ -158,7 +167,8 @@ public class RabbitMQListener extends GenericEventBasedConsumer {
                 rabbitmqProperties, name);
         rabbitMqMessageHandler = new StreamQueueMessageHandler(name, injectingSeq, onErrorSeq, sequential,
                 synapseEnvironment, rabbitmqProperties, addressSelector, registryOffsetTracker);
-        rabbitMQConsumer = RabbitMQUtils.createStreamConsumer(connection, rabbitMqMessageHandler, rabbitmqProperties, registryOffsetTracker);
+        rabbitMQConsumer = RabbitMQUtils.createStreamConsumer(connection, rabbitMqMessageHandler,
+                rabbitmqProperties, registryOffsetTracker);
     }
 
     /**

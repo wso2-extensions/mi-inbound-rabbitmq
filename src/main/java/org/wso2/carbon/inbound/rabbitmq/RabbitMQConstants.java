@@ -18,7 +18,13 @@
 package org.wso2.carbon.inbound.rabbitmq;
 
 import com.rabbitmq.client.amqp.Management;
-
+/**
+ * This class defines a collection of constants used for configuring and interacting
+ * with RabbitMQ messaging services. It includes queue names, exchange names,
+ * routing keys, and other RabbitMQ-related configuration values.
+ * The constants in this class help ensure consistency and reduce the risk of
+ * hardcoding values throughout the application.
+ */
 public class RabbitMQConstants {
 
     // --- Threading and Internal Constants ---
@@ -202,7 +208,8 @@ public class RabbitMQConstants {
      */
     public static final String QUEUE_OVERFLOW_STRATEGY = "rabbitmq.queue.overflow.strategy";
     // Assuming Management.OverflowStrategy is an Enum/Class available at compile time
-    public static final Management.OverflowStrategy DEFAULT_QUEUE_OVERFLOW_STRATEGY = Management.OverflowStrategy.DROP_HEAD;
+    public static final Management.OverflowStrategy DEFAULT_QUEUE_OVERFLOW_STRATEGY =
+            Management.OverflowStrategy.DROP_HEAD;
 
     // --- Message Properties and Headers ---
     // --------------------------------------
@@ -235,7 +242,7 @@ public class RabbitMQConstants {
     /**
      * Property for the maximum time (in milliseconds) to wait for publisher acknowledgments.
      */
-    public static String ACK_MAX_WAIT_TIME = "rabbitmq.ack.wait.time";
+    public static final String ACK_MAX_WAIT_TIME = "rabbitmq.ack.wait.time";
     public static final long DEFAULT_ACK_MAX_WAIT_TIME = 180000; // 3 minutes
 
     /**
@@ -250,7 +257,9 @@ public class RabbitMQConstants {
     public static final String DEAD_LETTER_QUEUE_NAME = "rabbitmq.dead.letter.queue.name";
     public static final String DEAD_LETTER_QUEUE_TYPE = "rabbitmq.dead.letter.queue.type";
     public static final String DEAD_LETTER_QUEUE_AUTO_DECLARE = "rabbitmq.dead.letter.queue.auto.declare";
-    public static final long DEFAULT_DEAD_LETTER_QUEUE_MESSAGE_TTL = 5000; // 5 seconds TTL on DLQ messages for retry loop
+
+    // 5 seconds TTL on DLQ messages for retry loop
+    public static final long DEFAULT_DEAD_LETTER_QUEUE_MESSAGE_TTL = 5000;
     public static final String DEAD_LETTER_QUEUE_MESSAGE_TTL = "rabbitmq.dead.letter.queue.message.ttl";
 
     public static final String DEAD_LETTER_EXCHANGE_NAME = "rabbitmq.dead.letter.exchange.name";
@@ -272,7 +281,8 @@ public class RabbitMQConstants {
     public static final String FINAL_DEAD_LETTER_EXCHANGE_NAME = "rabbitmq.final.dead.letter.exchange.name";
     public static final String FINAL_DEAD_LETTER_ROUTING_KEY = "rabbitmq.final.dead.letter.routing.key";
     public static final String FINAL_DEAD_LETTER_EXCHANGE_TYPE = "rabbitmq.final.dead.letter.exchange.type";
-    public static final String FINAL_DEAD_LETTER_EXCHANGE_AUTO_DECLARE = "rabbitmq.final.dead.letter.exchange.auto.declare";
+    public static final String FINAL_DEAD_LETTER_EXCHANGE_AUTO_DECLARE
+            = "rabbitmq.final.dead.letter.exchange.auto.declare";
 
     // --- Dead Letter Publisher Retry Properties ---
     // ----------------------------------------------
@@ -292,13 +302,15 @@ public class RabbitMQConstants {
     /**
      * Factor for exponential backoff between retries.
      */
-    public static final String DEAD_LETTER_PUBLISHER_RETRY_EXPONENTIAL_FACTOR = "rabbitmq.dead.letter.publisher.retry.exponential.factor";
+    public static final String DEAD_LETTER_PUBLISHER_RETRY_EXPONENTIAL_FACTOR
+            = "rabbitmq.dead.letter.publisher.retry.exponential.factor";
     public static final float DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_EXPONENTIAL_FACTOR = 2.0F;
 
     /**
      * Timeout (in milliseconds) for the dead-letter publisher during shutdown.
      */
-    public static final String DEAD_LETTER_PUBLISHER_SHUTDOWN_TIMEOUT = "rabbitmq.dead.letter.publisher.shutdown.timeout";
+    public static final String DEAD_LETTER_PUBLISHER_SHUTDOWN_TIMEOUT
+            = "rabbitmq.dead.letter.publisher.shutdown.timeout";
     public static final long DEFAULT_DEAD_LETTER_PUBLISHER_SHUTDOWN_TIMEOUT = 180000; // 3 minutes
 
     /**
@@ -310,7 +322,8 @@ public class RabbitMQConstants {
     /**
      * Flag to override classic queue requeue behavior with discard instead of requeueing.
      */
-    public static final String OVERRIDE_CLASSIC_QUEUE_MESSAGE_REQUEUE_BEHAVIOR_WITH_DISCARD = "rabbitmq.classic.override.requeue.with.discard";
+    public static final String OVERRIDE_CLASSIC_QUEUE_MESSAGE_REQUEUE_BEHAVIOR_WITH_DISCARD
+            = "rabbitmq.classic.override.requeue.with.discard";
 
     // --- Classic Queue Specific Properties ---
     // -----------------------------------------
@@ -337,7 +350,8 @@ public class RabbitMQConstants {
     public static final String STREAM_FILTER_MATCH_UNFILTERED = "rabbitmq.stream.filter.match.unfiltered";
     public static final String STREAM_OFFSET_TRACKER_FLUSH_INTERVAL = "rabbitmq.stream.offset.tracker.flush.interval";
     public static final long DEFAULT_STREAM_OFFSET_TRACKER_FLUSH_INTERVAL = 10;
-    public static final String STREAM_OFFSET_TRACKER_SHUTDOWN_TIMEOUT = "rabbitmq.stream.offset.tracker.shutdown.timeout";
+    public static final String STREAM_OFFSET_TRACKER_SHUTDOWN_TIMEOUT
+            = "rabbitmq.stream.offset.tracker.shutdown.timeout";
     public static final long DEFAULT_STREAM_OFFSET_TRACKER_SHUTDOWN_TIMEOUT = 5;
 
     /**
