@@ -239,6 +239,13 @@ public class RabbitMQConstants {
      * Header used by the Stream plugin to store the message offset.
      */
     public static final String X_STREAM_OFFSET = "x-stream-offset";
+
+    // --- Acknowledgment Properties ---
+    // ---------------------------------
+    /**
+        * Flag to enable automatic message acknowledgments.
+     */
+    public static final String AUTO_ACK_ENABLED = "rabbitmq.auto.ack.enabled";
     /**
      * Property for the maximum time (in milliseconds) to wait for publisher acknowledgments.
      */

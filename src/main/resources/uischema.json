@@ -1178,7 +1178,6 @@
               "helpTip": "Defines what happens when a queue reaches its maximum length: **DROP_HEAD** (oldest messages are discarded), **REJECT_PUBLISH** (new messages are rejected), or **REJECT_PUBLISH_DLX** (rejected and sent to the Dead Letter Exchange)."
             }
           },
-
           {
             "type": "attribute",
             "value": {
@@ -1190,7 +1189,17 @@
               "helpTip": "The delay (in milliseconds) before a failed message is automatically requeued for another attempt."
             }
           },
-
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.auto.ack.enabled",
+              "displayName": "Auto Acknowledge Enabled",
+              "inputType": "checkbox",
+              "defaultValue": "false",
+              "required": "false",
+              "helpTip": "If enabled, messages will be automatically acknowledged (ACKed) upon receipt, without waiting for processing confirmation."
+            }
+          },
           {
             "type": "attribute",
             "value": {

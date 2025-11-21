@@ -144,6 +144,13 @@ public abstract class AbstractRabbitMQMessageHandler implements Consumer.Message
                 log.error("[" + inboundName + "] Sequence: " + injectingSeq + " not found");
             }
 
+            boolean autoAck = "true".equalsIgnoreCase(
+                    (String) rabbitMQProperties.getOrDefault(RabbitMQConstants.AUTO_ACK_ENABLED, "false"));
+
+            if (autoAck) {
+                return RabbitMQAcknowledgementMode.ACCEPTED;
+            }
+
             AckDecision ackDecision;
             try {
                 // Wait for acknowledgment decision with a timeout
