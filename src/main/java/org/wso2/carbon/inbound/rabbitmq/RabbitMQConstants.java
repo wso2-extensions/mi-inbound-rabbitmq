@@ -414,4 +414,45 @@ public class RabbitMQConstants {
         private ClassicDeadLetterStrategy() {
         }
     }
+
+    /**
+     * Throttling related constants
+     */
+    public static final String RABBITMQ_THROTTLE_ENABLED = "rabbitmq.throttle.enabled";
+    public static final String RABBITMQ_THROTTLE_MODE = "rabbitmq.throttle.mode";
+    public static final String RABBITMQ_THROTTLE_TIME_UNIT = "rabbitmq.throttle.timeUnit";
+    public static final String RABBITMQ_THROTTLE_COUNT = "rabbitmq.throttle.count";
+    public static final int RABBITMQ_DEFAULT_THROTTLE_LIMIT = 60;
+
+    /**
+     * Throttle mode
+     */
+    public enum ThrottleMode {
+        FIXED_INTERVAL,
+        BATCH;
+
+        public static ThrottleMode fromString(String mode) {
+            try {
+                return ThrottleMode.valueOf(mode.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+    }
+    /**
+     * Throttle time unit
+     */
+    public enum ThrottleTimeUnit {
+        MINUTE,
+        HOUR,
+        DAY;
+
+        public static ThrottleTimeUnit fromString(String unit) {
+            try {
+                return ThrottleTimeUnit.valueOf(unit.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+    }
 }

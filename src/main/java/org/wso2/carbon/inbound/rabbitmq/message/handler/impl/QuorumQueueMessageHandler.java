@@ -78,6 +78,9 @@ public class QuorumQueueMessageHandler extends AbstractRabbitMQMessageHandler {
     @Override
     public void handle(Consumer.Context consumerContext, Message message) {
 
+        if (isThrottlingEnabled) {
+            handleThrottling();
+        }
         // Retrieve the current RabbitMQ address
         Address address = addressSelector.getCurrentAddress();
 

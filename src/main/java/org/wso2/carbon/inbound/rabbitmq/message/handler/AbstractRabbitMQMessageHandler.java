@@ -24,6 +24,7 @@ import org.apache.axis2.AxisFault;
 import org.apache.axis2.context.MessageContext;
 import org.apache.axis2.transport.base.AckDecision;
 import org.apache.axis2.transport.base.AckDecisionCallback;
+import org.apache.commons.lang.time.DateUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.synapse.SynapseConstants;
@@ -33,6 +34,7 @@ import org.apache.synapse.core.SynapseEnvironment;
 import org.apache.synapse.mediators.base.SequenceMediator;
 import org.wso2.carbon.inbound.rabbitmq.RabbitMQAcknowledgementMode;
 import org.wso2.carbon.inbound.rabbitmq.RabbitMQConstants;
+import org.wso2.carbon.inbound.rabbitmq.RabbitMQException;
 import org.wso2.carbon.inbound.rabbitmq.RabbitMQMessageContext;
 import org.wso2.carbon.inbound.rabbitmq.RabbitMQRoundRobinAddressSelector;
 import org.wso2.carbon.inbound.rabbitmq.RabbitMQUtils;
@@ -60,6 +62,13 @@ public abstract class AbstractRabbitMQMessageHandler implements Consumer.Message
     protected final String queue;
     protected final RabbitMQRoundRobinAddressSelector addressSelector;
     protected final Properties rabbitMQProperties;
+    protected final boolean isThrottlingEnabled;
+    protected RabbitMQConstants.ThrottleMode throttleMode;
+    protected RabbitMQConstants.ThrottleTimeUnit throttleTimeUnit;
+    protected int throttleCount;
+    protected long consumptionStartedTime;
+    protected int consumedMessageCount = 0;
+    protected long lastMessageProcessedTime = 0;
 
     // Constructor to initialize the AbstractRabbitMQMessageHandler with necessary configurations
     public AbstractRabbitMQMessageHandler(String inboundName, String injectingSeq,
@@ -96,8 +105,16 @@ public abstract class AbstractRabbitMQMessageHandler implements Consumer.Message
 
         // Retrieve the queue name from RabbitMQ properties
         this.queue = rabbitMQProperties.getProperty(RabbitMQConstants.QUEUE_NAME);
-    }
 
+        isThrottlingEnabled = Boolean.parseBoolean((String) rabbitMQProperties.getOrDefault(
+                RabbitMQConstants.RABBITMQ_THROTTLE_ENABLED, "false"));
+
+        if (isThrottlingEnabled) {
+            this.throttleMode = RabbitMQUtils.getThrottleMode(rabbitMQProperties);
+            this.throttleTimeUnit = RabbitMQUtils.getThrottleTimeUnit(rabbitMQProperties);
+            this.throttleCount = RabbitMQUtils.getThrottleCount(rabbitMQProperties);
+        }
+    }
 
     /**
      * Handles the incoming RabbitMQ message by determining the message builder,
@@ -327,6 +344,85 @@ public abstract class AbstractRabbitMQMessageHandler implements Consumer.Message
                                                   Consumer.Context context,
                                                   RabbitMQAcknowledgementMode acknowledgementMode);
 
+    /**
+     * Handles throttling for RabbitMQ message processing.
+     * This method implements two throttling modes:
+     * - FIXED\_INTERVAL: Ensures a fixed delay between message processing.
+     * - BATCH: Limits the number of messages processed within a specific time unit.
+     *
+     * If throttling is enabled, the method calculates the required delay or sleep time
+     * based on the configured throttle mode, throttle count, and time unit.
+     *
+     */
+    protected void handleThrottling() {
+        try {
+            switch (throttleMode) {
+                case FIXED_INTERVAL: {
+                    long throttleSleepDelay = getSleepDelay();
+                    long currentTime = System.currentTimeMillis();
+
+                    // Calculate remaining sleep time based on elapsed time since last message
+                    long remainingSleepTime = throttleSleepDelay;
+                    if (lastMessageProcessedTime > 0) {
+                        long elapsedTime = currentTime - lastMessageProcessedTime;
+                        remainingSleepTime = throttleSleepDelay - elapsedTime;
+                    }
+                    if (remainingSleepTime > 0) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("[" + inboundName + "] Sleeping " + remainingSleepTime
+                                    + " ms with Fixed-Interval throttling.");
+                        }
+                        Thread.sleep(remainingSleepTime);
+                    } else {
+                        if (log.isDebugEnabled()) {
+                            log.debug("[" + inboundName + "] No sleep needed for Fixed-Interval throttling - " +
+                                    "sufficient time has elapsed.");
+                        }
+                    }
+
+                    // Update last message processed time
+                    lastMessageProcessedTime = System.currentTimeMillis();
+                    break;
+                }
+                case BATCH: {
+                    if (consumedMessageCount == 0) {
+                        consumptionStartedTime = System.currentTimeMillis();
+                        if (log.isDebugEnabled()) {
+                            log.debug("[" + inboundName + "] Batch throttling started at " + consumptionStartedTime);
+                        }
+                    }
+                    consumedMessageCount++;
+                    if (consumedMessageCount >= throttleCount) {
+                        long consumptionDuration = System.currentTimeMillis() - consumptionStartedTime;
+                        // consumed messages have exceeded the defined count
+                        long remainingDuration = getRemainingDuration(consumptionDuration);
+                        if (remainingDuration >= 0) {
+                            // if time is remaining, we need to sleep while it exceeds
+                            if (log.isDebugEnabled()) {
+                                log.debug("[" + inboundName + "] Sleeping " + remainingDuration
+                                        + " ms with Batch throttling.");
+                            }
+                            Thread.sleep(remainingDuration);
+                        }
+                        consumedMessageCount = 0;
+                    }
+                    if (log.isDebugEnabled()) {
+                        log.debug("[" + inboundName + "] Consumed Message Count per min: " + consumedMessageCount);
+                    }
+                    break;
+                }
+                default:
+                    throw new RabbitMQException("[" + inboundName + "] Invalid Throttling mode " + throttleMode);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("[" + inboundName + "] Error in sleeping with " + throttleMode + " throttling", e);
+        } catch (RabbitMQException e) {
+            log.error("[" + inboundName + "] Invalid Throttling mode " + throttleMode ,
+                    e);
+        }
+    }
+
 
     /**
      * Clones the RabbitMQMessageContext and creates a new Message object.
@@ -386,6 +482,59 @@ public abstract class AbstractRabbitMQMessageHandler implements Consumer.Message
         return newMessage;
     }
 
+    /**
+     * Calculates the sleep delay based on the throttle time unit and throttle count.
+     * The sleep delay determines the interval between message processing when throttling is enabled.
+     *
+     * @return The calculated sleep delay in milliseconds.
+     */
+    private long getSleepDelay() {
+        long sleepDelay;
+        switch (throttleTimeUnit) {
+            case MINUTE:
+                sleepDelay = DateUtils.MILLIS_PER_MINUTE / throttleCount;
+                break;
+            case HOUR:
+                sleepDelay = DateUtils.MILLIS_PER_HOUR / throttleCount;
+                break;
+            case DAY:
+                sleepDelay = DateUtils.MILLIS_PER_DAY / throttleCount;
+                break;
+            default:
+                log.error("Unrecognized throttle time unit, defaulting to MINUTE.");
+                sleepDelay = DateUtils.MILLIS_PER_MINUTE / throttleCount;
+                break;
+        }
+        return sleepDelay;
+    }
+
+    /**
+     * Calculates the remaining duration for throttling based on the consumption duration.
+     * This method ensures that the throttling interval is respected by determining how much time
+     * is left before the next batch of messages can be processed.
+     *
+     * @param consumptionDuration The duration of message consumption in milliseconds.
+     * @return The remaining duration in milliseconds before the next batch can be processed.
+     */
+    private long getRemainingDuration(long consumptionDuration) {
+        long remainingDuration;
+
+        switch (throttleTimeUnit) {
+            case HOUR:
+                remainingDuration = DateUtils.MILLIS_PER_HOUR - consumptionDuration;
+                break;
+            case MINUTE:
+                remainingDuration = DateUtils.MILLIS_PER_MINUTE - consumptionDuration;
+                break;
+            case DAY:
+                remainingDuration = DateUtils.MILLIS_PER_DAY - consumptionDuration;
+                break;
+            default:
+                log.error("Unrecognized throttle time unit, defaulting to MINUTE.");
+                remainingDuration = DateUtils.MILLIS_PER_MINUTE - consumptionDuration;
+        }
+        return remainingDuration;
+    }
 
     /**
      * Shuts down the message handler and releases any resources held by it.

@@ -22,7 +22,6 @@ import com.rabbitmq.client.amqp.Connection;
 import com.rabbitmq.client.amqp.Consumer;
 import com.rabbitmq.client.amqp.ConsumerBuilder;
 import com.rabbitmq.client.amqp.Management;
-
 import org.apache.axiom.om.OMElement;
 import org.apache.axis2.AxisFault;
 import org.apache.axis2.builder.Builder;
@@ -36,16 +35,13 @@ import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.inbound.rabbitmq.message.handler.AbstractRabbitMQMessageHandler;
-
 import java.io.ByteArrayInputStream;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-
 import javax.mail.internet.ContentType;
 import javax.mail.internet.ParseException;
-
 /**
  * Utility class for RabbitMQ operations, providing methods for message handling,
  * queue and exchange management, and other RabbitMQ-related functionalities.
@@ -910,5 +906,80 @@ public class RabbitMQUtils {
         }
     }
 
+    /**
+     *
+     * Retrieves the throttle count from rabbitMQProperties.
+     *
+     * @param rabbitMQProperties the map containing the configuration properties
+     * @return the throttle limit, defaulting to 60
+     */
+    public static int getThrottleCount(Properties rabbitMQProperties) {
+        String throttleCountStr = rabbitMQProperties.getProperty(RabbitMQConstants.RABBITMQ_THROTTLE_COUNT);
+        int throttleCount = RabbitMQConstants.RABBITMQ_DEFAULT_THROTTLE_LIMIT; // Default value
 
+        if (throttleCountStr != null) {
+            try {
+                throttleCount = Integer.parseInt(throttleCountStr);
+                if (throttleCount <= 0) {
+                    log.error("Throttle limit value is zero or negative, using default: "
+                            + RabbitMQConstants.RABBITMQ_DEFAULT_THROTTLE_LIMIT);
+                    throttleCount = RabbitMQConstants.RABBITMQ_DEFAULT_THROTTLE_LIMIT;
+                }
+            } catch (NumberFormatException e) {
+                log.error("Invalid throttle limit value '" + throttleCountStr + "', using default: "
+                        + RabbitMQConstants.RABBITMQ_DEFAULT_THROTTLE_LIMIT, e);
+            }
+        } else {
+            log.warn("Throttle count property is not set, using default: "
+                    + RabbitMQConstants.RABBITMQ_DEFAULT_THROTTLE_LIMIT);
+        }
+
+        return throttleCount;
+    }
+
+    /**
+     * Retrieves the throttle mode from rabbitMQProperties.
+     *
+     * @param rabbitMQProperties the map containing the configuration properties
+     * @return the throttle mode as a string, defaulting to FIXED_INTERVAL
+     */
+    public static RabbitMQConstants.ThrottleMode getThrottleMode(Properties rabbitMQProperties) {
+        String throttleModeStr = rabbitMQProperties.getProperty(RabbitMQConstants.RABBITMQ_THROTTLE_MODE);
+        RabbitMQConstants.ThrottleMode throttleMode = null;
+
+        if (throttleModeStr != null) {
+            throttleMode = RabbitMQConstants.ThrottleMode.fromString(throttleModeStr);
+        }
+
+        if (throttleMode == null) {
+            log.error("Invalid or missing throttle mode: " + throttleModeStr + ", using default: "
+                    + RabbitMQConstants.ThrottleMode.FIXED_INTERVAL);
+            throttleMode = RabbitMQConstants.ThrottleMode.FIXED_INTERVAL; // default mode
+        }
+
+        return throttleMode;
+    }
+
+    /**
+     * Retrieves the throttle time unit from rabbitMQProperties.
+     *
+     * @param rabbitMQProperties the map containing the configuration properties
+     * @return the throttle time unit as a string, defaulting to MINUTE
+     */
+    public static RabbitMQConstants.ThrottleTimeUnit getThrottleTimeUnit(Properties rabbitMQProperties) {
+        String timeUnitStr = rabbitMQProperties.getProperty(RabbitMQConstants.RABBITMQ_THROTTLE_TIME_UNIT);
+        RabbitMQConstants.ThrottleTimeUnit timeUnit = null;
+
+        if (timeUnitStr != null) {
+            timeUnit = RabbitMQConstants.ThrottleTimeUnit.fromString(timeUnitStr);
+        }
+
+        if (timeUnit == null) {
+            log.error("Invalid or missing throttle time unit: " + timeUnitStr + ", using default: "
+                    + RabbitMQConstants.ThrottleTimeUnit.MINUTE);
+            timeUnit = RabbitMQConstants.ThrottleTimeUnit.MINUTE;
+        }
+
+        return timeUnit;
+    }
 }

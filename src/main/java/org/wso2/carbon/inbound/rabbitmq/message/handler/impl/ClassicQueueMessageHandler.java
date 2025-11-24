@@ -125,6 +125,9 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
     @Override
     public void handle(Consumer.Context consumerContext, Message message) {
 
+        if (isThrottlingEnabled) {
+            handleThrottling();
+        }
         // Retrieve the current RabbitMQ address
         Address address = addressSelector.getCurrentAddress();
 
@@ -144,6 +147,7 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
 
         // Handle message acknowledgment based on the determined mode
         handleAcknowledgement(axis2MsgCtx, rabbitMQMsgCtx, consumerContext, acknowledgementMode);
+
     }
 
 

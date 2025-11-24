@@ -1147,6 +1147,68 @@
     {
       "type": "attributeGroup",
       "value": {
+        "groupName": "Throttling",
+        "isCollapsed": true,
+        "elements": [
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.throttle.enabled",
+              "displayName": "Throttling Enabled",
+              "inputType": "checkbox",
+              "defaultValue": "false",
+              "required": "false",
+              "helpTip": "If enabled, message consumption will be throttled to a specified rate."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.throttle.mode",
+              "displayName": "Throttling Mode",
+              "inputType": "combo",
+              "comboValues": [
+                "FIXED_INTERVAL",
+                "BATCH"
+              ],
+              "defaultValue" : "BATCH",
+              "required": "false",
+              "helpTip": "The mode of throttling: **FIXED_INTERVAL** (consume messages at fixed time intervals) or **BATCH** (consume messages as quickly as possible within a specified time window or until the throttle count is reached)."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.throttle.timeUnit",
+              "displayName": "Throttling TimeUnit",
+              "inputType": "combo",
+              "comboValues": [
+                "MINUTE",
+                "HOUR",
+                "DAY"
+              ],
+              "defaultValue" : "MINUTE",
+              "required": "false",
+              "helpTip": "The time unit for the throttling rate: per **MINUTE**, **HOUR**, or **DAY**."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.throttle.count",
+              "displayName": "Throttling Limit",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "helpTip": "The maximum number of messages to consume within the specified time unit."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "attributeGroup",
+      "value": {
         "groupName": "Other",
         "isCollapsed": true,
         "elements": [
