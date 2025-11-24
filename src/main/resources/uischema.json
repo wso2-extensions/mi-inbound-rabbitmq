@@ -418,7 +418,7 @@
                 "QUORUM",
                 "STREAM"
               ],
-              "defaultValue": "CLASSIC",
+              "defaultValue": "QUORUM",
               "required": "true",
               "helpTip": "Select the type of RabbitMQ queue to interact with: Classic, Quorum (for high availability), or Stream (for large, continuous message flows)."
             }
@@ -1209,6 +1209,30 @@
               "defaultValue": "180000",
               "required": "false",
               "helpTip": "The maximum time (in milliseconds) to wait for a message acknowledgment (ACK) after it has been injected into the processing sequence."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.concurrent.consumers.count",
+              "displayName": "Concurrent Consumers",
+              "inputType": "string",
+              "defaultValue": "1",
+              "required": "false",
+              "helpTip": "The number of concurrent consumers to create for processing messages from the queue.",
+              "enableCondition": ["NOT",{"rabbitmq.queue.type":"STREAM"}]
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.message.receiver.thread.pool.size",
+              "displayName": "Message Receiver Thread Pool Size",
+              "inputType": "string",
+              "defaultValue": "1",
+              "required": "false",
+              "helpTip": "The size of the thread pool used for receiving messages from the RabbitMQ broker. It is recommended to set this value greater than the number of concurrent consumers.",
+              "enableCondition": ["NOT",{"rabbitmq.queue.type":"STREAM"}]
             }
           },
           {

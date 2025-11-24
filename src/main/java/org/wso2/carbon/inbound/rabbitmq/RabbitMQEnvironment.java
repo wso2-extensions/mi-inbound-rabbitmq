@@ -33,7 +33,6 @@ import org.apache.commons.logging.LogFactory;
 
 import org.apache.synapse.SynapseException;
 
-
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.KeyStore;
@@ -45,6 +44,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
@@ -53,10 +53,6 @@ import java.util.stream.IntStream;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-
-
-
-
 /**
  * This class represents the RabbitMQ environment configuration and connection management.
  * It initializes and manages the AMQP environment, handles connection retries,
@@ -167,6 +163,10 @@ public class RabbitMQEnvironment {
 
         // Initialize the AMQP environment builder and set connection settings
         AmqpEnvironmentBuilder environmentBuilder = new AmqpEnvironmentBuilder();
+        /// Set the dispatching executor to manage message receiver threads.
+        // This executor will be shared among all consumers created from this environment.
+        // If not set, the RabbitMQ Java API will create a thread pool with a thread count
+        // equal to the server's CPU count.
         environmentBuilder.dispatchingExecutor(getDispatchingExecutor());
         AmqpEnvironmentBuilder.EnvironmentConnectionSettings connectionSettings =
                 environmentBuilder.connectionSettings();
@@ -373,6 +373,16 @@ public class RabbitMQEnvironment {
             int maxThreadCount = NumberUtils.toInt(
                     rabbitMQProperties.get(RabbitMQConstants.MESSAGE_RECEIVER_THREAD_POOL_SIZE),
                     RabbitMQConstants.DEFAULT_MESSAGE_RECEIVER_THREAD_POOL_SIZE);
+            int concurrentConsumerCount = NumberUtils.toInt(
+                    rabbitMQProperties.get(RabbitMQConstants.CONCURRENT_CONSUMERS_COUNT),
+                    RabbitMQConstants.DEFAULT_CONCURRENT_CONSUMERS_COUNT);
+            // Since the message receiver threads are shared between the concurrent consumers,
+            // ensure that the thread count is at least equal to the number of concurrent consumers.
+            if (maxThreadCount < concurrentConsumerCount) {
+                log.warn(logPrefix + " - Thread count is less than the concurrent consumer count" +
+                        ". Adjusting thread count to: " + concurrentConsumerCount);
+                maxThreadCount = concurrentConsumerCount;
+            }
             // Create a fixed thread pool with a custom thread factory
             dispatchedExecutor = Executors.newFixedThreadPool(maxThreadCount, createThreadFactory());
         }
@@ -459,7 +469,6 @@ public class RabbitMQEnvironment {
             return retry();
         }
     }
-
     /**
      * Builds a new RabbitMQ connection using the configured environment.
      *
@@ -479,7 +488,6 @@ public class RabbitMQEnvironment {
         log.info("[" + inboundName + "] Successfully connected to RabbitMQ Broker");
         return connection;
     }
-
     /**
      * Retries the connection to the RabbitMQ Broker based on the configured retry count and interval.
      *
@@ -726,8 +734,8 @@ public class RabbitMQEnvironment {
      */
     public void close() {
         // Shut down the executor service if it is initialized
-        if (dispatchedExecutor instanceof java.util.concurrent.ExecutorService) {
-            ((java.util.concurrent.ExecutorService) dispatchedExecutor).shutdown();
+        if (dispatchedExecutor instanceof ExecutorService) {
+            ((ExecutorService) dispatchedExecutor).shutdown();
             dispatchedExecutor = null;
         }
         // Close the AMQP environment if it is initialized

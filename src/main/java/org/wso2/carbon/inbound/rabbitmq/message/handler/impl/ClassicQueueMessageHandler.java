@@ -73,6 +73,8 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
     private final AtomicInteger activeDeadLetterPublishersInUse = new AtomicInteger(0);
     private ConcurrentHashMap<String, AtomicInteger> deadLetterRetryCountMap;
     private static final Queue<Publisher> deadLetterPublisherPool = new ConcurrentLinkedQueue<>();
+    private final String consumerID;
+
 
     /**
      * Constructor for ClassicQueueMessageHandler.
@@ -93,13 +95,15 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
                                       SynapseEnvironment synapseEnvironment,
                                       Properties rabbitMQProperties,
                                       RabbitMQRoundRobinAddressSelector addressSelector,
-                                      Connection connection) {
+                                      Connection connection,
+                                      String consumerID) {
         // Call the superclass constructor to initialize the base handler
         super(inboundName, injectingSeq, onErrorSeq, sequential,
                 synapseEnvironment, rabbitMQProperties, addressSelector);
 
         // Assign the RabbitMQ connection
         this.connection = connection;
+        this.consumerID = consumerID;
 
         // Check if the fixed delay retryable discard strategy is enabled
         if (rabbitMQProperties.containsKey(RabbitMQConstants.CLASSIC_DEAD_LETTER_STRATEGY)
@@ -177,7 +181,8 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
                 break;
             default:
                 // Log a warning for unknown acknowledgment modes
-                log.warn("[" + inboundName + "] Unknown AcknowledgementMode: " + acknowledgementMode);
+                log.warn("[" + inboundName + "][" + consumerID + "] Unknown AcknowledgementMode: "
+                        + acknowledgementMode);
                 // Nothing to do here
         }
     }
@@ -213,12 +218,12 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
                         long delay = Long.parseLong(delayValue);
                         Thread.sleep(delay);
                     } else {
-                        log.warn("[" + inboundName + "] Requeue delay value is null for message id: "
-                                + messageID + ". Skipping delay.");
+                        log.warn("[" + inboundName + "][" + consumerID + "] Requeue delay value is null for " +
+                                "message id: " + messageID + ". Skipping delay.");
                     }
                 } catch (NumberFormatException ex) {
-                    log.warn("[" + inboundName + "] Invalid requeue delay value '" + delayValue + "' for" +
-                            " message id: " + messageID + ". Skipping delay.", ex);
+                    log.warn("[" + inboundName + "][" + consumerID + "] Invalid requeue delay value '"
+                            + delayValue + "' for" + " message id: " + messageID + ". Skipping delay.", ex);
                 } catch (InterruptedException ex) {
                     log.warn("[" + inboundName + "] Thread has been interrupted " +
                             "while delaying message requeue for message id: " + messageID, ex);
@@ -226,8 +231,8 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
             }
             // Requeue the message
             context.requeue();
-            log.info("[" + inboundName + "] The message with message id: " + messageID +
-                    " on the queue: " + this.queue + " will be requeued.");
+            log.info("[" + inboundName + "][" + consumerID + "] The message with message id: "
+                    + messageID + " on the queue: " + this.queue + " will be requeued.");
         }
     }
 
@@ -263,7 +268,7 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
                 try {
                     maxDeadLetteredCount = Integer.parseInt(maxDeadLetteredCountStr.trim());
                 } catch (NumberFormatException e) {
-                    log.warn("[" + inboundName + "] Invalid value for "
+                    log.warn("[" + inboundName + "][" + consumerID + "] Invalid value for "
                             + RabbitMQConstants.MAX_DEAD_LETTERED_COUNT + " : "
                             + maxDeadLetteredCountStr + ". Using default value -1.");
                     maxDeadLetteredCount = -1;
@@ -319,12 +324,12 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
         // If the count is within the maximum allowed, discard the message
         if (count != null && count <= maxDeadLetteredCount) {
             context.discard();
-            log.info("[" + inboundName + "] The rejected message with message id: " + messageID +
-                    " on the queue: " + this.queue + " is dead-lettered " + count + " time(s).");
+            log.info("[" + inboundName + "][" + consumerID + "] The rejected message with message id: "
+                    + messageID + " on the queue: " + this.queue + " is dead-lettered " + count + " time(s).");
         } else if (count == null) {
             context.discard();
-            log.info("[" + inboundName + "] The rejected message with message id: " + messageID +
-                    " on the queue: " + this.queue + " is dead-lettered ");
+            log.info("[" + inboundName + "][" + consumerID + "] The rejected message with message id: "
+                    + messageID + " on the queue: " + this.queue + " is dead-lettered ");
         } else {
             // Handle the message after exceeding the max dead-letter count
             proceedAfterMaxDeadLetteredCount(messageID, rabbitMQMsgCtx, context);
@@ -348,7 +353,7 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
                     try {
                         return Long.parseLong(countObj.toString());
                     } catch (NumberFormatException e) {
-                        log.warn("[" + inboundName + "] Unable to parse dead-letter count from " +
+                        log.warn("[" + inboundName + "][" + consumerID + "] Unable to parse dead-letter count from " +
                                 "x-death header for queue: " + this.queue + ". Value: " + countObj, e);
                         return null;
                     }
@@ -369,8 +374,8 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
     private void discardMessage(String messageID, Consumer.Context context) {
         // Discard the message
         context.discard();
-        log.info("[" + inboundName + "] The rejected message with message id: " + messageID +
-                " on the queue: " + this.queue + " will discard or dead-lettered.");
+        log.info("[" + inboundName + "][" + consumerID + "] The rejected message with message id: "
+                + messageID + " on the queue: " + this.queue + " will discard or dead-lettered.");
     }
 
     /**
@@ -412,7 +417,7 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
 
         // If no valid dead letter publisher is available, log and accept the message
         if (deadLetterPublisher == null) {
-            log.info("[" + inboundName + "] The max dead lettered count exceeded. " +
+            log.info("[" + inboundName + "][" + consumerID + "] The max dead lettered count exceeded. " +
                     "No valid configuration for publishing the message. " +
                     "Message with message id: " + messageContext.getMessageID() + " will discard.");
             consumerContext.accept();
@@ -454,7 +459,7 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
                 try {
                     retryInterval = Long.parseLong(retryIntervalStr);
                 } catch (NumberFormatException e) {
-                    log.warn("[" + inboundName + "] Invalid value for "
+                    log.warn("[" + inboundName + "][" + consumerID + "] Invalid value for "
                             + RabbitMQConstants.DEAD_LETTER_PUBLISHER_RETRY_INTERVAL
                             + " : '" + retryIntervalStr + "'. Using default: "
                             + RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_COUNT, e);
@@ -469,7 +474,7 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
                     deadLetterPublisher, publisherCallBack.result.get(retryInterval, TimeUnit.MILLISECONDS));
         } catch (TimeoutException e) {
             // Log and handle timeout exceptions during publishing
-            log.error("[" + inboundName + "] Publish to Final Dead Letter operation timed out " +
+            log.error("[" + inboundName + "][" + consumerID + "] Publish to Final Dead Letter operation timed out " +
                     "for message id: " + messageID, e);
             handleDeadLetterPublishingFailures(
                     deadLetterPublisher.message(messageContext.getBody()).messageId(messageID),
@@ -477,8 +482,8 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
             consumerContext.accept();
         } catch (ExecutionException | InterruptedException e) {
             // Log and handle execution or interruption exceptions during publishing
-            log.error("[" + inboundName + "] Publish to Final Dead Letter operation encountered an error " +
-                    "for message id: " + messageID, e);
+            log.error("[" + inboundName + "][" + consumerID + "] Publish to Final Dead Letter operation " +
+                    "encountered an error for message id: " + messageID, e);
             handleDeadLetterPublishingFailures(
                     deadLetterPublisher.message(messageContext.getBody()).messageId(messageID),
                     messageContext, deadLetterPublisher);
@@ -506,16 +511,17 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
                                         Publisher.Status status) {
         if (status == Publisher.Status.ACCEPTED) {
             // Log success and accept the message
-            log.info("[" + inboundName + "] Message with message id: " + messageID + " successfully published " +
-                    "to the dead letter queue/exchange after exceeding max dead lettered count.");
+            log.info("[" + inboundName + "][" + consumerID + "] Message with message id: " + messageID
+                    + " successfully published to the dead letter queue/exchange after " +
+                    "exceeding max dead lettered count.");
             consumerContext.accept();
         } else {
             // Handle publishing failures and log the error
             handleDeadLetterPublishingFailures(
                     deadLetterPublisher.message(messageContext.getBody()).messageId(messageID),
                     messageContext, deadLetterPublisher);
-            log.error("[" + inboundName + "] Message with message id: " + messageID + " failed to " +
-                    "publish after exceeding max dead lettered count.");
+            log.error("[" + inboundName + "][" + consumerID + "] Message with message id: "
+                    + messageID + " failed to publish after exceeding max dead lettered count.");
             consumerContext.accept();
         }
     }
@@ -563,7 +569,7 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
             try {
                 maxRetryAttempt = Integer.parseInt(maxRetryAttemptStr);
             } catch (NumberFormatException e) {
-                log.warn("[" + inboundName + "] Invalid value for "
+                log.warn("[" + inboundName + "][" + consumerID + "] Invalid value for "
                         + RabbitMQConstants.DEAD_LETTER_PUBLISHER_RETRY_COUNT
                         + " : '" + maxRetryAttemptStr + "'. Using default: "
                         + RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_COUNT, e);
@@ -589,7 +595,7 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
                     try {
                         retryInterval = Long.parseLong(retryIntervalStr);
                     } catch (NumberFormatException e) {
-                        log.warn("[" + inboundName + "] Invalid value for "
+                        log.warn("[" + inboundName + "][" + consumerID + "] Invalid value for "
                                 + RabbitMQConstants.DEAD_LETTER_PUBLISHER_RETRY_INTERVAL
                                 + " : '" + maxRetryAttemptStr + "'. Using default: "
                                 + RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_COUNT, e);
@@ -606,7 +612,7 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
                     try {
                         exponentialFactor = Float.parseFloat(exponentialFactorStr);
                     } catch (NumberFormatException e) {
-                        log.warn("[" + inboundName + "] Invalid value for "
+                        log.warn("[" + inboundName + "][" + consumerID + "] Invalid value for "
                                 + RabbitMQConstants.DEAD_LETTER_PUBLISHER_RETRY_EXPONENTIAL_FACTOR
                                 + " : '" + maxRetryAttemptStr + "'. Using default: "
                                 + RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_RETRY_COUNT, e);
@@ -623,21 +629,21 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
                 // Check the result of the publishing operation
                 if (publisherCallBack.result.get(timeout, TimeUnit.MILLISECONDS) == Publisher.Status.ACCEPTED) {
                     // Log success and remove the message from the retry map
-                    log.info("[" + inboundName + "] Message with message id: " + messageId + " " +
+                    log.info("[" + inboundName + "][" + consumerID + "] Message with message id: " + messageId + " " +
                             "successfully published after " + retryAttempts.get() + " attempt(s).");
                     deadLetterRetryCountMap.remove(messageId);
                     return;
                 }
             } catch (TimeoutException | ExecutionException | InterruptedException e) {
                 // Log the failure and increment the retry attempt count
-                log.warn("[" + inboundName + "] Retry attempt " + retryAttempts.incrementAndGet() + " " +
+                log.warn("[" + inboundName + "][" + consumerID + "] Retry attempt " + retryAttempts.incrementAndGet() +
                         "failed for message id: " + messageId, e);
             }
         }
 
         // Log that the maximum retry attempts have been reached and discard the message
-        log.info("[" + inboundName + "] Message with message id: " + messageId + " reached max publishing attempts." +
-                " Discarding the message.");
+        log.info("[" + inboundName + "][" + consumerID + "] Message with message id: "
+                + messageId + " reached max publishing attempts.Discarding the message.");
     }
 
 
@@ -677,7 +683,7 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
                 publisher = builder.build();
             } else {
                 // Log a warning if insufficient information is provided
-                log.warn("[" + inboundName + "] Insufficient information provided " +
+                log.warn("[" + inboundName + "][" + consumerID + "] Insufficient information provided " +
                         "to create Dead Letter Publisher. Dead Letter Publisher will not be created " +
                         "and messages won't publish to final dead letter exchange " +
                         "once the maximum dead lettered count exceeded.");
@@ -700,7 +706,8 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
             // Add the publisher back to the pool
             boolean offered = deadLetterPublisherPool.offer(publisher);
             if (!offered) {
-                log.warn("[" + inboundName + "] Failed to return Publisher to DeadLetterPublisherPool.");
+                log.warn("[" + inboundName + "][" + consumerID + "] Failed to return " +
+                        "Publisher to DeadLetterPublisherPool.");
             }
             // Decrement the count of active publishers in use
             activeDeadLetterPublishersInUse.decrementAndGet();
@@ -721,7 +728,7 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
             try {
                 shutdownTimeout = Long.parseLong(shutdownTimeoutStr);
             } catch (NumberFormatException e) {
-                log.warn("[" + inboundName + "] Invalid value for "
+                log.warn("[" + inboundName + "][" + consumerID + "] Invalid value for "
                         + RabbitMQConstants.DEAD_LETTER_PUBLISHER_SHUTDOWN_TIMEOUT
                         + ": ' " + shutdownTimeoutStr + "'. Using default: "
                         + RabbitMQConstants.DEFAULT_DEAD_LETTER_PUBLISHER_SHUTDOWN_TIMEOUT, e);
@@ -745,20 +752,22 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
                     // Clear the pool if no publishers are in use
                     if (activeDeadLetterPublishersInUse.get() == 0) {
                         deadLetterPublisherPool.clear();
-                        log.info("[" + inboundName + "] DeadLetterPublisherPool cleared successfully.");
+                        log.info("[" + inboundName + "][" + consumerID + "] DeadLetterPublisherPool " +
+                                "cleared successfully.");
                         // Shut down the scheduler if not already shut down
                         if (!scheduler.isShutdown()) {
                             scheduler.shutdown();
                         }
                     } else {
                         // Log a warning if publishers are still in use
-                        log.warn("[" + inboundName + "] DeadLetterPublisherPool still has publishers in use." +
-                                " Retrying...");
+                        log.warn("[" + inboundName + "][" + consumerID + "] DeadLetterPublisherPool still has " +
+                                "publishers in use. Retrying...");
                     }
                 }
             } catch (Exception e) {
                 // Log any errors that occur during the clearing process
-                log.error("[" + inboundName + "] An error occurred while clearing the DeadLetterPublisherPool.", e);
+                log.error("[" + inboundName + "][" + consumerID + "] An error occurred while " +
+                        "clearing the DeadLetterPublisherPool.", e);
             }
         }, 0, 5, TimeUnit.SECONDS);
     }

@@ -49,7 +49,6 @@ import java.util.Properties;
  * including message filtering, offset tracking, and acknowledgment handling.
  */
 public class StreamQueueMessageHandler extends AbstractRabbitMQMessageHandler {
-
     private static final Log log = LogFactory.getLog(StreamQueueMessageHandler.class);
     private final RabbitMQRegistryOffsetTracker registryOffsetTracker;
 

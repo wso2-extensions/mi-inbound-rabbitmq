@@ -34,13 +34,8 @@ public class RabbitMQConstants {
      * Prefix for the names of the message receiver threads.
      */
     public static final String MESSAGE_RECEIVER_THREAD_NAME_PREFIX = "-rabbitmq-inbound-listener-dispatcher-";
-
-    /**
-     * Property key for the size of the message consumer thread pool.
-     */
-    public static final String MESSAGE_RECEIVER_THREAD_POOL_SIZE = "rabbitmq.message.consumer.thread.pool.size";
-    public static final int DEFAULT_MESSAGE_RECEIVER_THREAD_POOL_SIZE = 10;
-
+    public static final String MESSAGE_RECEIVER_THREAD_POOL_SIZE = "rabbitmq.message.receiver.thread.pool.size";
+    public static final int DEFAULT_MESSAGE_RECEIVER_THREAD_POOL_SIZE = 1;
     /**
      * Internal constant for marking a transaction for rollback.
      */
@@ -202,6 +197,13 @@ public class RabbitMQConstants {
      */
     public static final String CONSUMER_INITIAL_CREDIT = "rabbitmq.consumer.initial.credit";
     public static final int DEFAULT_CONSUMER_INITIAL_CREDIT = 1;
+
+    /**
+        * Number of concurrent consumers to process messages from the queue.
+     */
+    public static final String CONCURRENT_CONSUMERS_COUNT = "rabbitmq.concurrent.consumers.count";
+    public static final int DEFAULT_CONCURRENT_CONSUMERS_COUNT = 1;
+    public static final String CONSUMER_PREFIX = "consumer-";
 
     /**
      * Strategy for handling queue overflow. Maps to Management.OverflowStrategy.

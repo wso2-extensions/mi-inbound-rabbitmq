@@ -37,7 +37,8 @@ import org.wso2.carbon.inbound.rabbitmq.message.handler.impl.ClassicQueueMessage
 import org.wso2.carbon.inbound.rabbitmq.message.handler.impl.QuorumQueueMessageHandler;
 import org.wso2.carbon.inbound.rabbitmq.message.handler.impl.StreamQueueMessageHandler;
 
-
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -49,14 +50,13 @@ public class RabbitMQListener extends GenericEventBasedConsumer {
     private static final Log log = LogFactory.getLog(RabbitMQListener.class);
     private final Properties rabbitmqProperties;
     private final SynapseEnvironment synapseEnvironment;
-    private AbstractRabbitMQMessageHandler rabbitMqMessageHandler;
     private RabbitMQEnvironment environment = null;
     private Connection connection = null;
-    private Consumer rabbitMQConsumer = null;
     private RabbitMQRegistryOffsetTracker registryOffsetTracker;
     private RabbitMQRoundRobinAddressSelector addressSelector;
     private boolean isDestroyed = false;
-
+    private final Map<String, Consumer> rabbitMQConsumersMap = new HashMap<>();
+    private final Map<String, AbstractRabbitMQMessageHandler> messageHandlerMap = new HashMap<>();
 
     /**
      * Constructor for RabbitMQListener.
@@ -98,7 +98,6 @@ public class RabbitMQListener extends GenericEventBasedConsumer {
         initializeRabbitMQEnvironment();
     }
 
-
     /**
      * Starts listening to the RabbitMQ queue. Establishes a connection and initializes the consumer
      * based on the queue type specified in the RabbitMQ properties.
@@ -119,7 +118,7 @@ public class RabbitMQListener extends GenericEventBasedConsumer {
         }
 
         // Initialize the RabbitMQ consumer if not already initialized
-        if (rabbitMQConsumer == null) {
+        if (rabbitMQConsumersMap.isEmpty()) {
             try (Management management = connection.management()) {
                 // Retrieve exchange and queue names from properties
                 String exchangeName = properties.getProperty(RabbitMQConstants.EXCHANGE_NAME);
@@ -165,125 +164,170 @@ public class RabbitMQListener extends GenericEventBasedConsumer {
         registryOffsetTracker = new RabbitMQRegistryOffsetTracker(
                 (AbstractRegistry) synapseEnvironment.getSynapseConfiguration().getRegistry(),
                 rabbitmqProperties, name);
-        rabbitMqMessageHandler = new StreamQueueMessageHandler(name, injectingSeq, onErrorSeq, sequential,
-                synapseEnvironment, rabbitmqProperties, addressSelector, registryOffsetTracker);
-        rabbitMQConsumer = RabbitMQUtils.createStreamConsumer(connection, rabbitMqMessageHandler,
+        StreamQueueMessageHandler messageHandler =
+                new StreamQueueMessageHandler(name, injectingSeq, onErrorSeq, sequential,
+                        synapseEnvironment, rabbitmqProperties, addressSelector, registryOffsetTracker);
+        Consumer consumer = RabbitMQUtils.createStreamConsumer(connection, messageHandler,
                 rabbitmqProperties, registryOffsetTracker);
+        rabbitMQConsumersMap.put(RabbitMQConstants.CONSUMER_PREFIX + 0, consumer);
+        messageHandlerMap.put(RabbitMQConstants.CONSUMER_PREFIX + 0, messageHandler);
     }
 
     /**
-     * Initializes the consumer and message handler for a CLASSIC queue type.
+     * Initializes the consumers and message handlers for a CLASSIC queue type.
      */
     private void initializeClassicConsumer() {
-        rabbitMqMessageHandler = new ClassicQueueMessageHandler(name, injectingSeq, onErrorSeq, sequential,
-                synapseEnvironment, rabbitmqProperties, addressSelector, connection);
-        rabbitMQConsumer = RabbitMQUtils.createDefaultConsumer(connection, rabbitMqMessageHandler, rabbitmqProperties);
+        int consumerCount = getConsumerCount();
+        for (int i = 0; i < consumerCount; i++) {
+            String consumerID = RabbitMQConstants.CONSUMER_PREFIX + i;
+            ClassicQueueMessageHandler messageHandler =
+                    new ClassicQueueMessageHandler(name, injectingSeq, onErrorSeq, sequential,
+                            synapseEnvironment, rabbitmqProperties, addressSelector, connection, consumerID);
+            Consumer consumer = RabbitMQUtils.createDefaultConsumer(connection, messageHandler, rabbitmqProperties);
+            // Store the message handler and consumer in a map
+            rabbitMQConsumersMap.put(RabbitMQConstants.CONSUMER_PREFIX + i, consumer);
+            messageHandlerMap.put(RabbitMQConstants.CONSUMER_PREFIX + i, messageHandler);
+        }
     }
 
     /**
-     * Initializes the consumer and message handler for a QUORUM queue type.
+     * Initializes the consumers and message handlers for a QUORUM queue type.
      */
     private void initializeQuorumConsumer() {
-        rabbitMqMessageHandler = new QuorumQueueMessageHandler(name, injectingSeq, onErrorSeq, sequential,
-                synapseEnvironment, rabbitmqProperties, addressSelector);
-        rabbitMQConsumer = RabbitMQUtils.createDefaultConsumer(connection, rabbitMqMessageHandler, rabbitmqProperties);
+        int consumerCount = getConsumerCount();
+        for (int i = 0; i < consumerCount; i++) {
+            String consumerID = RabbitMQConstants.CONSUMER_PREFIX + i;
+            QuorumQueueMessageHandler messageHandler =
+                    new QuorumQueueMessageHandler(name, injectingSeq, onErrorSeq, sequential,
+                            synapseEnvironment, rabbitmqProperties, addressSelector, consumerID);
+            Consumer consumer = RabbitMQUtils.createDefaultConsumer(connection, messageHandler, rabbitmqProperties);
+            // Store the message handler and consumer in a map
+            rabbitMQConsumersMap.put(RabbitMQConstants.CONSUMER_PREFIX + i, consumer);
+            messageHandlerMap.put(RabbitMQConstants.CONSUMER_PREFIX + i, messageHandler);
+        }
     }
 
     /**
-    * Resumes the RabbitMQ listener if it has been destroyed.
-    */
-   public void resume() {
-       if (isDestroyed) {
-           // Reinitialize the RabbitMQ environment if it is null
-           if (this.environment == null) {
-               initializeRabbitMQEnvironment();
-           }
-           // Start listening to the RabbitMQ queue
-           listen();
-           isDestroyed = false;
-       }
-   }
+     * Resumes the RabbitMQ listener if it has been destroyed.
+     */
+    public void resume() {
+        if (isDestroyed) {
+            // Reinitialize the RabbitMQ environment if it is null
+            if (this.environment == null) {
+                initializeRabbitMQEnvironment();
+            }
+            // Start listening to the RabbitMQ queue
+            listen();
+            isDestroyed = false;
+        }
+    }
 
-   /**
-    * Pauses the RabbitMQ listener by destroying its resources.
-    */
-   public void pause() {
-       destroy();
-   }
+    /**
+     * Pauses the RabbitMQ listener by destroying its resources.
+     */
+    public void pause() {
+        destroy();
+    }
 
-   /**
-    * Initializes the RabbitMQ environment and address selector.
-    */
-   private void initializeRabbitMQEnvironment() {
-       addressSelector = new RabbitMQRoundRobinAddressSelector();
-       try {
-           environment = new RabbitMQEnvironment(name, rabbitmqProperties, addressSelector);
-       } catch (RabbitMQException e) {
-           throw new SynapseException("Error occurred while initializing the RabbitMQ environment.", e);
-       }
-   }
+    /**
+     * Initializes the RabbitMQ environment and address selector.
+     */
+    private void initializeRabbitMQEnvironment() {
+        addressSelector = new RabbitMQRoundRobinAddressSelector();
+        try {
+            environment = new RabbitMQEnvironment(name, rabbitmqProperties, addressSelector);
+        } catch (RabbitMQException e) {
+            throw new SynapseException("Error occurred while initializing the RabbitMQ environment.", e);
+        }
+    }
 
-   /**
-    * Destroys the RabbitMQ listener by releasing all resources.
-    */
-   @Override
-   public void destroy() {
-       // Retrieve the maximum wait time for unsettled messages or use the default value
-       long maxWaitTimeMillis = NumberUtils.toLong(
-               rabbitmqProperties.getProperty(RabbitMQConstants.MAX_WAIT_TIME_MILLIS),
-               RabbitMQConstants.DEFAULT_MAX_WAIT_TIME_MILLIS);
+    /**
+     * Retrieves the number of concurrent consumers from the RabbitMQ properties.
+     *
+     * @return The number of concurrent consumers.
+     */
+    private int getConsumerCount() {
+            return NumberUtils
+                    .toInt(
+                            rabbitmqProperties.getProperty(RabbitMQConstants.CONCURRENT_CONSUMERS_COUNT),
+                            RabbitMQConstants.DEFAULT_CONCURRENT_CONSUMERS_COUNT
+                    );
+    }
 
-       // Pause the consumer and wait for unsettled messages to clear
-       if (rabbitMQConsumer != null) {
-           rabbitMQConsumer.pause();
-           long startTime = System.currentTimeMillis();
+    /**
+     * Destroys the RabbitMQ listener by releasing all resources.
+     */
+    @Override
+    public void destroy() {
+        // Retrieve the maximum wait time for unsettled messages or use the default value
+        long maxWaitTimeMillis = NumberUtils.toLong(
+                rabbitmqProperties.getProperty(RabbitMQConstants.MAX_WAIT_TIME_MILLIS),
+                RabbitMQConstants.DEFAULT_MAX_WAIT_TIME_MILLIS);
 
-           while (System.currentTimeMillis() - startTime < maxWaitTimeMillis) {
-               if (rabbitMQConsumer.unsettledMessageCount() <= 0) {
-                   break;
-               }
-               try {
-                   Thread.sleep(100); // Sleep briefly to avoid busy-waiting
-               } catch (InterruptedException e) {
-                   log.warn("Interrupted while waiting for unsettled messages to clear.", e);
-                   Thread.currentThread().interrupt();
-                   break;
-               }
-           }
-       }
+        // Pause all consumers and wait for unsettled messages to clear in parallel
+        if (!rabbitMQConsumersMap.isEmpty()) {
+            rabbitMQConsumersMap.values().parallelStream().forEach(consumer -> {
+                consumer.pause();
+                long startTime = System.currentTimeMillis();
 
-       // Close and release all RabbitMQ resources
-       try {
-           if (rabbitMQConsumer != null) {
-               rabbitMQConsumer.close();
-               rabbitMQConsumer = null;
-           }
+                while (System.currentTimeMillis() - startTime < maxWaitTimeMillis) {
+                    if (consumer.unsettledMessageCount() <= 0) {
+                        break;
+                    }
+                    try {
+                        Thread.sleep(100); // Sleep briefly to avoid busy-waiting
+                    } catch (InterruptedException e) {
+                        log.warn("Interrupted while waiting for unsettled messages to clear.", e);
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+            });
+        }
 
-           if (rabbitMqMessageHandler != null) {
-               rabbitMqMessageHandler.shutdown();
-               rabbitMqMessageHandler = null;
-           }
+        // Close and release all RabbitMQ resources
+        try {
+            if (!rabbitMQConsumersMap.isEmpty()) {
+                rabbitMQConsumersMap.values().parallelStream().forEach(consumer -> {
+                    try {
+                        consumer.close();
+                    } catch (Exception e) {
+                        log.warn("Error while closing a RabbitMQ consumer.", e);
+                    }
+                });
+                rabbitMQConsumersMap.clear();
+            }
 
-           if (registryOffsetTracker != null) {
-               registryOffsetTracker.shutdown();
-           }
+            if (!messageHandlerMap.isEmpty()) {
+                messageHandlerMap.values().parallelStream().forEach(handler -> {
+                    try {
+                        handler.shutdown();
+                    } catch (Exception e) {
+                        log.warn("Error while shutting down a RabbitMQ message handler.", e);
+                    }
+                });
+                messageHandlerMap.clear();
+            }
 
-           if (connection != null) {
-               connection.close();
-               connection = null;
-           }
+            if (registryOffsetTracker != null) {
+                registryOffsetTracker.shutdown();
+            }
 
-           if (environment != null) {
-               environment.close();
-               environment = null;
-               addressSelector = null;
-           }
-       } catch (Exception e) {
-           log.error("Error while closing RabbitMQ resources.", e);
-       }
+            if (connection != null) {
+                connection.close();
+                connection = null;
+            }
 
-       isDestroyed = true;
-   }
+            if (environment != null) {
+                environment.close();
+                environment = null;
+                addressSelector = null;
+            }
+        } catch (Exception e) {
+            log.error("Error while closing RabbitMQ resources.", e);
+        }
+        isDestroyed = true;
+    }
 
 }
 
