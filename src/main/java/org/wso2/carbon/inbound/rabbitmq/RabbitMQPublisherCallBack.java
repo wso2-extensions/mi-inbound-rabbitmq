@@ -18,44 +18,42 @@
 package org.wso2.carbon.inbound.rabbitmq;
 
 import com.rabbitmq.client.amqp.Publisher;
-
 import java.util.concurrent.CompletableFuture;
 
 /**
  * This class implements the RabbitMQ `Publisher.Callback` interface to handle the status of published messages.
  * It uses a `CompletableFuture` to track the result of the message publishing operation.
  */
-public class RabbitMQPublisherCallBack implements Publisher.Callback  {
+public class RabbitMQPublisherCallBack implements Publisher.Callback {
+    private final RabbitMQMessageContext rabbitMQMessageContext;
 
- private final RabbitMQMessageContext rabbitMQMessageContext;
+    /**
+     * Constructor for RabbitMQPublisherCallBack.
+     *
+     * @param rabbitMQMessageContext The RabbitMQ message context associated with this callback.
+     */
+    public RabbitMQPublisherCallBack(RabbitMQMessageContext rabbitMQMessageContext) {
+        this.rabbitMQMessageContext = rabbitMQMessageContext;
+    }
 
- /**
-  * Constructor for RabbitMQPublisherCallBack.
-  *
-  * @param rabbitMQMessageContext The RabbitMQ message context associated with this callback.
-  */
- public RabbitMQPublisherCallBack(RabbitMQMessageContext rabbitMQMessageContext) {
-     this.rabbitMQMessageContext = rabbitMQMessageContext;
- }
+    // CompletableFuture to track the result of the message publishing operation
+    public CompletableFuture<Publisher.Status> result = new CompletableFuture<>();
 
- // CompletableFuture to track the result of the message publishing operation
- public CompletableFuture<Publisher.Status> result = new CompletableFuture<>();
-
- /**
-  * Handles the status of the published message.
-  *
-  * @param context The context of the message publishing operation.
-  */
- @Override
- public void handle(Publisher.Context context) {
-     // Check if the message was accepted
-     if (context.status() == Publisher.Status.ACCEPTED) {
-         result.complete(Publisher.Status.ACCEPTED);
-     } else {
-         // Complete exceptionally if the message was not accepted
-         result.completeExceptionally(
-                 new RabbitMQException("Message with message id: " + rabbitMQMessageContext.getMessageID() +
-                         " not accepted: " + context.status(), context.failureCause()));
-     }
- }
+    /**
+     * Handles the status of the published message.
+     *
+     * @param context The context of the message publishing operation.
+     */
+    @Override
+    public void handle(Publisher.Context context) {
+        // Check if the message was accepted
+        if (context.status() == Publisher.Status.ACCEPTED) {
+            result.complete(Publisher.Status.ACCEPTED);
+        } else {
+            // Complete exceptionally if the message was not accepted
+            result.completeExceptionally(
+                    new RabbitMQException("Message with message id: " + rabbitMQMessageContext.getMessageID() +
+                            " not accepted: " + context.status(), context.failureCause()));
+        }
+    }
 }

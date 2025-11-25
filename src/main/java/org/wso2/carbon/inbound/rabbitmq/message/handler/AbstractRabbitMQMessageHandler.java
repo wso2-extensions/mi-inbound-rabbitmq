@@ -17,7 +17,6 @@
  */
 package org.wso2.carbon.inbound.rabbitmq.message.handler;
 
-
 import com.rabbitmq.client.amqp.Consumer;
 import com.rabbitmq.client.amqp.Message;
 import org.apache.axis2.AxisFault;
@@ -38,7 +37,6 @@ import org.wso2.carbon.inbound.rabbitmq.RabbitMQException;
 import org.wso2.carbon.inbound.rabbitmq.RabbitMQMessageContext;
 import org.wso2.carbon.inbound.rabbitmq.RabbitMQRoundRobinAddressSelector;
 import org.wso2.carbon.inbound.rabbitmq.RabbitMQUtils;
-
 
 import java.util.HashMap;
 import java.util.Map;
@@ -412,13 +410,13 @@ public abstract class AbstractRabbitMQMessageHandler implements Consumer.Message
                     break;
                 }
                 default:
-                    throw new RabbitMQException("[" + inboundName + "] Invalid Throttling mode " + throttleMode);
+                    throw new RabbitMQException("[" + inboundName + "] Invalid Throttling mode: " + throttleMode);
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.error("[" + inboundName + "] Error in sleeping with " + throttleMode + " throttling", e);
         } catch (RabbitMQException e) {
-            log.error("[" + inboundName + "] Invalid Throttling mode " + throttleMode ,
+            log.error("[" + inboundName + "] Invalid Throttling mode: " + throttleMode ,
                     e);
         }
     }
@@ -540,6 +538,4 @@ public abstract class AbstractRabbitMQMessageHandler implements Consumer.Message
      * Shuts down the message handler and releases any resources held by it.
      */
     public abstract void shutdown();
-
-
 }

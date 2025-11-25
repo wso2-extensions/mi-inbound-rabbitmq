@@ -17,13 +17,11 @@
  */
 package org.wso2.carbon.inbound.rabbitmq.message.handler.impl;
 
-
 import com.rabbitmq.client.amqp.Address;
 import com.rabbitmq.client.amqp.Consumer;
 import com.rabbitmq.client.amqp.Message;
 
 import org.apache.axis2.context.MessageContext;
-
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -37,11 +35,9 @@ import org.wso2.carbon.inbound.rabbitmq.RabbitMQRegistryOffsetTracker;
 import org.wso2.carbon.inbound.rabbitmq.RabbitMQRoundRobinAddressSelector;
 import org.wso2.carbon.inbound.rabbitmq.message.handler.AbstractRabbitMQMessageHandler;
 
-
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Properties;
-
 
 /**
  * This class handles RabbitMQ messages from stream queues. It extends the
@@ -102,7 +98,7 @@ public class StreamQueueMessageHandler extends AbstractRabbitMQMessageHandler {
 
         // Create a RabbitMQ message context
         RabbitMQMessageContext rabbitMQMsgCtx = new RabbitMQMessageContext(message, address.host(),
-                 address.port(), this.queue);
+                address.port(), this.queue);
 
         // Create a Synapse message context
         org.apache.synapse.MessageContext synapseMsgCtx = createMessageContext();
@@ -173,7 +169,7 @@ public class StreamQueueMessageHandler extends AbstractRabbitMQMessageHandler {
                 log.warn("[" + inboundName + "] Discard is not supported with the STREAM Type queues, " +
                         "hence accepting the message and moving forward. " +
                         "If you want to retrieve the failure message again " +
-                        "please configure the offset to current offset: " + registryOffsetTracker.getCurrentOffset()  +
+                        "please configure the offset to current offset: " + registryOffsetTracker.getCurrentOffset() +
                         "to and redeploy the inbound endpoint.");
                 context.accept();
                 break;
@@ -192,6 +188,4 @@ public class StreamQueueMessageHandler extends AbstractRabbitMQMessageHandler {
     public void shutdown() {
         registryOffsetTracker.shutdown();
     }
-
-
 }

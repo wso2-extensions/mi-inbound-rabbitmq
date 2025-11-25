@@ -35,6 +35,7 @@ import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.inbound.rabbitmq.message.handler.AbstractRabbitMQMessageHandler;
+
 import java.io.ByteArrayInputStream;
 import java.time.Duration;
 import java.util.HashMap;
@@ -42,13 +43,13 @@ import java.util.Map;
 import java.util.Properties;
 import javax.mail.internet.ContentType;
 import javax.mail.internet.ParseException;
+
 /**
  * Utility class for RabbitMQ operations, providing methods for message handling,
  * queue and exchange management, and other RabbitMQ-related functionalities.
  */
 public class RabbitMQUtils {
     private static final Log log = LogFactory.getLog(RabbitMQUtils.class);
-
 
     /**
      * Builds the message context by setting the correlation ID, content type, content encoding,
@@ -137,7 +138,14 @@ public class RabbitMQUtils {
         }
     }
 
-
+    /**
+     * Sets the transaction counted property in the message context.
+     * This property indicates whether the transaction has been counted
+     * and is retrieved from the RabbitMQ message context's application properties.
+     *
+     * @param msgContext             The Axis2 message context to be updated.
+     * @param rabbitMQMessageContext The RabbitMQ message context containing application properties.
+     */
     private static void setTransactionCountedProperty(MessageContext msgContext,
                                                       RabbitMQMessageContext rabbitMQMessageContext) {
         if (rabbitMQMessageContext.hasProperties()) {
@@ -147,7 +155,6 @@ public class RabbitMQUtils {
                 msgContext.setProperty(RabbitMQConstants.INTERNAL_TRANSACTION_COUNTED, transactionCounted);
             }
         }
-
     }
 
     /**
@@ -238,7 +245,6 @@ public class RabbitMQUtils {
                 }
             }
         }
-
         return map;
     }
 
@@ -371,10 +377,10 @@ public class RabbitMQUtils {
         if (queueType != Management.QueueType.STREAM) {
             Management.OverflowStrategy overflowStrategy =
                     properties.containsKey(RabbitMQConstants.QUEUE_OVERFLOW_STRATEGY)
-                    ? Management.OverflowStrategy.valueOf(
+                            ? Management.OverflowStrategy.valueOf(
                             properties.getProperty(RabbitMQConstants.QUEUE_OVERFLOW_STRATEGY)
                     )
-                    : RabbitMQConstants.DEFAULT_QUEUE_OVERFLOW_STRATEGY;
+                            : RabbitMQConstants.DEFAULT_QUEUE_OVERFLOW_STRATEGY;
 
             // Adjust overflow strategy for QUORUM queues with incompatible dead-letter strategies
             if (queueType == Management.QueueType.QUORUM &&
@@ -389,7 +395,6 @@ public class RabbitMQUtils {
             queueBuilder.overflowStrategy(overflowStrategy);
             configureDeadLetterQueue(management, queueBuilder, queueType, properties);
         }
-
         // Declare the queue
         queueBuilder.declare();
     }
@@ -517,7 +522,7 @@ public class RabbitMQUtils {
                         .equalsIgnoreCase(deadLetterStrategy)) {
                     long messageTTL = NumberUtils
                             .toLong(properties.getProperty(
-                                    RabbitMQConstants.DEAD_LETTER_QUEUE_MESSAGE_TTL),
+                                            RabbitMQConstants.DEAD_LETTER_QUEUE_MESSAGE_TTL),
                                     RabbitMQConstants.DEFAULT_DEAD_LETTER_QUEUE_MESSAGE_TTL);
                     deadLetterQueueDeclare(management, deadLetterQueueName,
                             deadLetterQueueType, messageTTL,
@@ -544,7 +549,7 @@ public class RabbitMQUtils {
             );
 
             if (BooleanUtils.toBooleanDefaultIfNull(BooleanUtils.toBooleanObject(
-                    properties.getProperty(RabbitMQConstants.DEAD_LETTER_EXCHANGE_AUTO_DECLARE)),
+                            properties.getProperty(RabbitMQConstants.DEAD_LETTER_EXCHANGE_AUTO_DECLARE)),
                     false)) {
                 deadLetterExchangeDeclare(management, deadLetterExchange, deadLetterExchangeType);
             }
@@ -680,7 +685,7 @@ public class RabbitMQUtils {
 
         // Determine the exchange type and handle binding accordingly
         String exchangeType = properties.getProperty(RabbitMQConstants.EXCHANGE_TYPE,
-                        RabbitMQConstants.DEFAULT_EXCHANGE_TYPE);
+                RabbitMQConstants.DEFAULT_EXCHANGE_TYPE);
         switch (Management.ExchangeType.valueOf(exchangeType)) {
             case HEADERS:
                 handleHeadersExchange(bindingBuilder, queueName, exchangeName, properties);
@@ -791,7 +796,7 @@ public class RabbitMQUtils {
     /**
      * Parses optional arguments from a comma-separated string into a map.
      *
-     * @param arguments  The comma-separated string of arguments.
+     * @param arguments The comma-separated string of arguments.
      * @return A map of parsed arguments, or null if no valid arguments are found.
      */
     private static Map<String, Object> getOptionalArguments(String arguments) {
@@ -907,7 +912,6 @@ public class RabbitMQUtils {
     }
 
     /**
-     *
      * Retrieves the throttle count from rabbitMQProperties.
      *
      * @param rabbitMQProperties the map containing the configuration properties
@@ -979,7 +983,6 @@ public class RabbitMQUtils {
                     + RabbitMQConstants.ThrottleTimeUnit.MINUTE);
             timeUnit = RabbitMQConstants.ThrottleTimeUnit.MINUTE;
         }
-
         return timeUnit;
     }
 }

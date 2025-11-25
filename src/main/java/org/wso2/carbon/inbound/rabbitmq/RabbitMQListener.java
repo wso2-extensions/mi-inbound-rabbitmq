@@ -17,7 +17,6 @@
  */
 package org.wso2.carbon.inbound.rabbitmq;
 
-
 import com.rabbitmq.client.amqp.AmqpException;
 import com.rabbitmq.client.amqp.Connection;
 import com.rabbitmq.client.amqp.Consumer;
@@ -328,6 +327,5 @@ public class RabbitMQListener extends GenericEventBasedConsumer {
         }
         isDestroyed = true;
     }
-
 }
 

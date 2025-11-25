@@ -46,6 +46,4 @@ public class RabbitMQException extends Exception {
     public RabbitMQException(String msg, Throwable throwable) {
         super(msg, throwable);
     }
-
-
 }

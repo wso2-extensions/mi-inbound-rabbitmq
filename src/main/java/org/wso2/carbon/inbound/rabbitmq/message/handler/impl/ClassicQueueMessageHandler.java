@@ -39,9 +39,7 @@ import org.wso2.carbon.inbound.rabbitmq.RabbitMQPublisherCallBack;
 import org.wso2.carbon.inbound.rabbitmq.RabbitMQRoundRobinAddressSelector;
 import org.wso2.carbon.inbound.rabbitmq.message.handler.AbstractRabbitMQMessageHandler;
 
-
 import java.time.Duration;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -65,6 +63,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Handles RabbitMQ messages for classic queues.
  * Supports acknowledgment modes: ACCEPTED, REQUEUE, and DISCARDED.
  * Provides dead-letter handling with retry mechanisms and configurable strategies.
+ * FIXED_DELAY_RETRYABLE_DISCARD - Retries message delivery with a fixed delay before discarding.
+ * NON_RETRYABLE_DISCARD - Discards the message without retrying.
  */
 public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
 
@@ -74,7 +74,6 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
     private ConcurrentHashMap<String, AtomicInteger> deadLetterRetryCountMap;
     private static final Queue<Publisher> deadLetterPublisherPool = new ConcurrentLinkedQueue<>();
     private final String consumerID;
-
 
     /**
      * Constructor for ClassicQueueMessageHandler.
@@ -775,6 +774,4 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
             }
         }, 0, 5, TimeUnit.SECONDS);
     }
-
-
 }

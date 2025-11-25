@@ -17,7 +17,6 @@
  */
 package org.wso2.carbon.inbound.rabbitmq;
 
-
 import com.rabbitmq.client.amqp.AmqpException;
 import com.rabbitmq.client.amqp.BackOffDelayPolicy;
 import com.rabbitmq.client.amqp.Connection;
@@ -30,7 +29,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.apache.synapse.SynapseException;
 
 import java.nio.file.Files;
@@ -53,14 +51,13 @@ import java.util.stream.IntStream;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
+
 /**
  * This class represents the RabbitMQ environment configuration and connection management.
  * It initializes and manages the AMQP environment, handles connection retries,
  * and provides SSL/TLS support for secure communication.
  */
 public class RabbitMQEnvironment {
-
-
     private static final Log log = LogFactory.getLog(RabbitMQEnvironment.class);
     private final Map<String, String> rabbitMQProperties = new HashMap<>();
     private Environment environment = null;

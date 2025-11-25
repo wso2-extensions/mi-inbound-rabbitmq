@@ -21,9 +21,10 @@ import com.rabbitmq.client.amqp.Message;
 
 import java.util.HashMap;
 import java.util.Map;
+
 /**
-    * This class holds the RabbitMQ message context information
-    */
+ * This class holds the RabbitMQ message context information
+ */
 public class RabbitMQMessageContext {
     private final byte[] body;
     private final String host;
@@ -35,9 +36,9 @@ public class RabbitMQMessageContext {
     private final String correlationId;
     private final String replyTo;
     private final boolean hasAnnotations;
-    private final Map<String, Object>  annotations = new HashMap<>();
+    private final Map<String, Object> annotations = new HashMap<>();
     private final boolean hasProperties;
-    private final Map<String, Object>  applicationProperties = new HashMap<>();
+    private final Map<String, Object> applicationProperties = new HashMap<>();
 
 
     public RabbitMQMessageContext(Message message, String host, int port, String queue) {
@@ -101,11 +102,12 @@ public class RabbitMQMessageContext {
     public String getReplyTo() {
         return replyTo;
     }
-    public Map<String, Object>  getAnnotations() {
+
+    public Map<String, Object> getAnnotations() {
         return annotations;
     }
 
-    public Map<String, Object>  getApplicationProperties() {
+    public Map<String, Object> getApplicationProperties() {
         return applicationProperties;
     }
 
@@ -117,5 +119,4 @@ public class RabbitMQMessageContext {
     public boolean hasProperties() {
         return hasProperties;
     }
-
 }

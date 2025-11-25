@@ -17,7 +17,6 @@
  */
 package org.wso2.carbon.inbound.rabbitmq.message.handler.impl;
 
-
 import com.rabbitmq.client.amqp.Address;
 import com.rabbitmq.client.amqp.Consumer;
 import com.rabbitmq.client.amqp.Message;
@@ -33,18 +32,14 @@ import org.wso2.carbon.inbound.rabbitmq.RabbitMQMessageContext;
 import org.wso2.carbon.inbound.rabbitmq.RabbitMQRoundRobinAddressSelector;
 import org.wso2.carbon.inbound.rabbitmq.message.handler.AbstractRabbitMQMessageHandler;
 
-
 import java.util.Objects;
 import java.util.Properties;
-
-
 
 /**
  * Handles RabbitMQ messages for quorum queues.
  * Provides functionality for processing messages and managing acknowledgments.
  */
 public class QuorumQueueMessageHandler extends AbstractRabbitMQMessageHandler {
-
     private static final Log log = LogFactory.getLog(QuorumQueueMessageHandler.class);
     private final String consumerID;
 
@@ -169,5 +164,4 @@ public class QuorumQueueMessageHandler extends AbstractRabbitMQMessageHandler {
     public void shutdown() {
         // No specific shutdown logic implemented
     }
-
 }

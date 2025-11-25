@@ -18,6 +18,7 @@
 package org.wso2.carbon.inbound.rabbitmq;
 
 import com.rabbitmq.client.amqp.Management;
+
 /**
  * This class defines a collection of constants used for configuring and interacting
  * with RabbitMQ messaging services. It includes queue names, exchange names,

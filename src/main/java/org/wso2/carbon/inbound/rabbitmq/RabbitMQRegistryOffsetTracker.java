@@ -22,7 +22,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.synapse.config.Entry;
 import org.apache.synapse.registry.AbstractRegistry;
-
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -35,12 +34,10 @@ import java.util.concurrent.atomic.AtomicLong;
  * provides methods to store, retrieve, and update offsets.
  */
 public class RabbitMQRegistryOffsetTracker {
-
     private static final Log log = LogFactory.getLog(RabbitMQRegistryOffsetTracker.class);
     private final AbstractRegistry registry;
     private final String registryPath;
     private final String resourcePath;
-
     private final String inboundName;
     private final Properties rabbitMqProperties;
     private long previousOffset = -1; // Initialize with an invalid offset value

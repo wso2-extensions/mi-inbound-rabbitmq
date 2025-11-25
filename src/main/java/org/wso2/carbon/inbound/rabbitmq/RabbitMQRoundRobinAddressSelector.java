@@ -19,7 +19,6 @@ package org.wso2.carbon.inbound.rabbitmq;
 
 import com.rabbitmq.client.amqp.Address;
 import com.rabbitmq.client.amqp.AddressSelector;
-
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -28,7 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * strategy for selecting RabbitMQ addresses from a list of available nodes.
  */
 public class RabbitMQRoundRobinAddressSelector implements AddressSelector {
-
     private final AtomicInteger count = new AtomicInteger();
     private Address address;
 

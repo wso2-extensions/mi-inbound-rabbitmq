@@ -21,7 +21,6 @@ import com.rabbitmq.client.amqp.ConsumerBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.synapse.SynapseException;
-
 import java.util.Properties;
 
 /**
@@ -32,10 +31,8 @@ import java.util.Properties;
 public class RabbitMQStreamSubscriptionListener implements ConsumerBuilder.SubscriptionListener {
 
     private static final Log log = LogFactory.getLog(RabbitMQStreamSubscriptionListener.class);
-
     private final RabbitMQRegistryOffsetTracker registryOffsetTracker;
     private final Properties rabbitMqProperties;
-
     /**
      * Constructor for RabbitMQStreamSubscriptionListener.
      *
@@ -76,6 +73,4 @@ public class RabbitMQStreamSubscriptionListener implements ConsumerBuilder.Subsc
             }
         }
     }
-
-
 }

@@ -16,12 +16,12 @@
  *  under the License.
  */
 package org.wso2.carbon.inbound.rabbitmq;
+
 /**
  * Enum representing the acknowledgement modes for RabbitMQ messages.
  * This defines how messages are acknowledged after being processed.
  */
 public enum RabbitMQAcknowledgementMode {
-
     ACCEPTED,
     DISCARDED,
     REQUEUE;
