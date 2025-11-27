@@ -750,7 +750,7 @@ public class ClassicQueueMessageHandler extends AbstractRabbitMQMessageHandler {
         scheduler.scheduleAtFixedRate(() -> {
             try {
                 // Check if the retry count map is empty or the shutdown timeout has been reached
-                if (deadLetterRetryCountMap.isEmpty() ||
+                if (deadLetterRetryCountMap != null && deadLetterRetryCountMap.isEmpty() ||
                         (System.currentTimeMillis() - startTime) >= finalShutdownTimeout) {
                     // Clear the pool if no publishers are in use
                     if (activeDeadLetterPublishersInUse.get() == 0) {
