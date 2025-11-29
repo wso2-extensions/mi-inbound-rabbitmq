@@ -344,7 +344,7 @@ public class RabbitMQUtils {
     public static void declareQueue(Management management, String queueName, Properties properties) {
         // Validate if the queue name is provided and if auto-declare is enabled
         if (StringUtils.isEmpty(queueName) || !BooleanUtils.toBooleanDefaultIfNull(
-                BooleanUtils.toBooleanObject(properties.getProperty(RabbitMQConstants.QUEUE_AUTODECLARE)), true)) {
+                BooleanUtils.toBooleanObject(properties.getProperty(RabbitMQConstants.QUEUE_AUTO_DECLARE)), true)) {
             return;
         }
 
@@ -632,7 +632,7 @@ public class RabbitMQUtils {
      */
     public static void declareExchange(Management management, String exchangeName, Properties properties) {
         boolean autoDeclare = BooleanUtils.toBooleanDefaultIfNull(
-                BooleanUtils.toBooleanObject(properties.getProperty(RabbitMQConstants.EXCHANGE_AUTODECLARE)), true);
+                BooleanUtils.toBooleanObject(properties.getProperty(RabbitMQConstants.EXCHANGE_AUTO_DECLARE)), true);
 
         // Proceed only if the exchange name is valid, auto-declare is enabled,
         // and the exchange is not a system exchange

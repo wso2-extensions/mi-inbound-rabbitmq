@@ -174,7 +174,7 @@ public class RabbitMQConstants {
     public static final String EXCHANGE_TYPE = "rabbitmq.exchange.type";
     public static final String DEFAULT_EXCHANGE_TYPE = "DIRECT"; // Using String value of Management.ExchangeType.DIRECT
     public static final String EXCHANGE_ARGUMENTS = "rabbitmq.exchange.arguments";
-    public static final String EXCHANGE_AUTODECLARE = "rabbitmq.exchange.autodeclare";
+    public static final String EXCHANGE_AUTO_DECLARE = "rabbitmq.exchange.auto.declare";
     public static final String EXCHANGE_AUTO_DELETE = "rabbitmq.exchange.auto.delete";
     public static final String ROUTING_KEY = "rabbitmq.routing.key";
     /**
@@ -189,7 +189,7 @@ public class RabbitMQConstants {
     public static final String QUEUE_TYPE = "rabbitmq.queue.type";
     public static final String DEFAULT_QUEUE_TYPE = "CLASSIC";
     public static final String QUEUE_ARGUMENTS = "rabbitmq.queue.arguments";
-    public static final String QUEUE_AUTODECLARE = "rabbitmq.queue.autodeclare";
+    public static final String QUEUE_AUTO_DECLARE = "rabbitmq.queue.auto.declare";
     public static final String QUEUE_AUTO_DELETE = "rabbitmq.queue.auto.delete";
     public static final String QUEUE_EXCLUSIVE = "rabbitmq.queue.exclusive";
 
