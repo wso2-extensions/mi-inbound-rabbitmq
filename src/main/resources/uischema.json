@@ -1245,7 +1245,19 @@
               "defaultValue": "",
               "required": "false",
               "placeholder" : "application/json",
-              "helpTip": "The Content-Type header to set for the consumed message."
+              "helpTip": "The Content-Type header to set for the consumed message  if the content-type cannot be determined from the consumed message."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.message.content.encoding",
+              "displayName": "Content Encoding (Charset)",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "placeholder" : "UTF-8",
+              "helpTip": "The content encoding/character set (e.g., UTF-8) used for the message body if the encoding/character set cannot be determined from the consumed message."
             }
           },
           {
