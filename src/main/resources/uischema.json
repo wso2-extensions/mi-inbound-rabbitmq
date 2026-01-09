@@ -1,0 +1,1364 @@
+{
+  "id": "org.wso2.carbon.inbound.rabbitmq.RabbitMQListener",
+  "name": "rabbitMQInbound",
+  "type": "event-integration",
+  "title": "RabbitMq",
+  "help": "Configures a RabbitMQ listener to consume messages from a specified queue and inject them into a sequence.",
+  "elements": [
+    {
+      "type": "attributeGroup",
+      "value": {
+        "groupName": "Generic",
+        "isCollapsed": false,
+        "elements": [
+          {
+            "type": "attribute",
+            "value": {
+              "name": "name",
+              "displayName": "Event Integration Name",
+              "inputType": "string",
+              "required": "true",
+              "helpTip": "A unique name for this RabbitMQ Inbound Endpoint configuration."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "class",
+              "displayName": "Class Name",
+              "inputType": "string",
+              "required": "true",
+              "hidden": true,
+              "defaultValue": "org.wso2.carbon.inbound.rabbitmq.RabbitMQListener"
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "sequence",
+              "displayName": "Injecting Sequence Name",
+              "inputType": "string",
+              "required": "true",
+              "helpTip": "The name of the **mediation sequence** that will process the consumed RabbitMQ messages."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "onError",
+              "displayName": "Error Sequence Name",
+              "inputType": "string",
+              "required": "true",
+              "helpTip": "The name of the **error handling sequence** to execute if an error occurs during message consumption or processing."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "suspend",
+              "displayName": "Suspend Inbound",
+              "inputType": "checkbox",
+              "defaultValue": false,
+              "hidden": "true",
+              "required": "false"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "attributeGroup",
+      "value": {
+        "groupName": "Inbound Functional",
+        "elements": [
+          {
+            "type": "attribute",
+            "value": {
+              "name": "inbound.behavior",
+              "displayName": "Inbound behavior",
+              "hidden": true,
+              "inputType": "string",
+              "defaultValue": "eventBased",
+              "required": "true",
+              "helpTip": "Defines the message consumption mode (e.g., event-based for immediate processing)."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "sequential",
+              "displayName": "Execute sequentially",
+              "inputType": "boolean",
+              "defaultValue": true,
+              "required": "false",
+              "helpTip": "If enabled, messages will be processed one after the other within the injection sequence, preserving message order."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "coordination",
+              "displayName": "Coordination",
+              "inputType": "boolean",
+              "defaultValue": true,
+              "required": "false",
+              "helpTip": "In a clustered environment, set this to true to ensure that only a **single worker node** is consuming messages from the queue at any given time."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "attributeGroup",
+      "value": {
+        "groupName": "Basic",
+        "isCollapsed": false,
+        "elements": [
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.server.host.name",
+              "displayName": "Server Hosts",
+              "inputType": "string",
+              "defaultValue": "localhost",
+              "required": "true",
+              "placeholder" : "server-1-host,server-2-host",
+              "helpTip": "Enter RabbitMQ server Hostnames as a comma-separated list (e.g., host1,host2)."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.server.port",
+              "displayName": "Server Ports",
+              "inputType": "string",
+              "defaultValue": "5672",
+              "required": "true",
+              "placeholder" : "server-1-port,server-2-port",
+              "helpTip": "Enter RabbitMQ server ports as a comma-separated list (e.g., port1,port2). Default is 5672 for non-SSL."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.queue.name",
+              "displayName": "Queue Name",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "true",
+              "helpTip": "The name of the RabbitMQ queue to consume messages from."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.queue.type",
+              "displayName": "Type",
+              "inputType": "combo",
+              "comboValues": [
+                "CLASSIC",
+                "QUORUM",
+                "STREAM"
+              ],
+              "defaultValue": "QUORUM",
+              "required": "true",
+              "helpTip": "Queue type to interact with: **CLASSIC**, **QUORUM** (high availability), or **STREAM** (large, continuous flow)."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.queue.auto.declare",
+              "displayName": "Auto Declare",
+              "inputType": "checkbox",
+              "defaultValue": true,
+              "required": "false",
+              "helpTip": "If enabled, the inbound endpoint will attempt to declare the queue if it doesn't exist."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.exchange.name",
+              "displayName": "Exchange Name",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "helpTip": "Name of the exchange to bind the queue to. Leave empty to consume directly from the queue."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.exchange.type",
+              "displayName": "Type",
+              "inputType": "combo",
+              "comboValues": [
+                "DIRECT",
+                "FANOUT",
+                "TOPIC",
+                "HEADERS"
+              ],
+              "defaultValue" : "DIRECT",
+              "required": "false",
+              "helpTip": "Type of the exchange: **DIRECT**, **FANOUT**, **TOPIC**, or **HEADERS**."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.exchange.auto.declare",
+              "displayName": "Auto Declare",
+              "inputType": "checkbox",
+              "defaultValue": true,
+              "required": "false",
+              "helpTip": "If enabled, the inbound endpoint will attempt to declare the exchange if it doesn't exist."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.routing.key",
+              "displayName": "Routing Key",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "enableCondition": ["OR",{"rabbitmq.exchange.type":"DIRECT"}, {"rabbitmq.exchange.type":"TOPIC"}],
+              "helpTip": "Routing key for binding the queue to a **DIRECT** or **TOPIC** exchange. Queue name is used if omitted."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "attributeGroup",
+      "value": {
+        "groupName": "User Authentication",
+        "elements": [
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.sasl.mechanism",
+              "displayName": "SASL Mechanism",
+              "inputType": "combo",
+              "comboValues": [
+                "PLAIN",
+                "EXTERNAL"
+              ],
+              "defaultValue" : "PLAIN",
+              "required": "true",
+              "helpTip": "Select the SASL mechanism for connection authentication."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.oauth2.enabled",
+              "displayName": "OAuth2 Enabled",
+              "inputType": "checkbox",
+              "defaultValue": false,
+              "required": "false",
+              "enableCondition": [{"rabbitmq.connection.sasl.mechanism":"PLAIN"}],
+              "helpTip": "Enable OAuth 2.0 (e.g., Client Credentials or Password Grant) for authentication."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.server.user.name",
+              "displayName": "Server Username",
+              "inputType": "string",
+              "defaultValue": "guest",
+              "required": "false",
+              "enableCondition": ["AND",{"rabbitmq.connection.sasl.mechanism":"PLAIN"},{"rabbitmq.connection.oauth2.enabled":false}],
+              "helpTip": "Username for PLAIN authentication."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.server.password",
+              "displayName": "Server Password",
+              "inputType": "string",
+              "defaultValue": "guest",
+              "required": "false",
+              "enableCondition": ["AND",{"rabbitmq.connection.sasl.mechanism":"PLAIN"},{"rabbitmq.connection.oauth2.enabled":false}],
+              "helpTip": "Password for PLAIN authentication."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.oauth2.token.endpoint",
+              "displayName": "Token Endpoint",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "enableCondition": [{"rabbitmq.connection.oauth2.enabled":true}],
+              "helpTip": "The OAuth 2.0 token endpoint URL to retrieve the access token."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.oauth2.grant.type",
+              "displayName": "Grant Type",
+              "inputType": "combo",
+              "comboValues": [
+                "client_credentials",
+                "password"
+              ],
+              "defaultValue" : "client_credentials",
+              "required": "false",
+              "enableCondition": [{"rabbitmq.connection.oauth2.enabled":true}],
+              "helpTip": "The OAuth 2.0 grant type to use for token retrieval."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.oauth2.client.id",
+              "displayName": "Client ID",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "enableCondition": [{"rabbitmq.connection.oauth2.enabled":true}],
+              "helpTip": "The client ID for OAuth 2.0 authentication."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.oauth2.client.secret",
+              "displayName": "Client Secret",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "enableCondition": [{"rabbitmq.connection.oauth2.enabled":true}],
+              "helpTip": "The client secret for OAuth 2.0 authentication."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.oauth2.username",
+              "displayName": "User Name",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "enableCondition": [{"rabbitmq.connection.oauth2.grant.type":"password"}],
+              "helpTip": "Username required when using the **password** OAuth 2.0 grant type."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.oauth2.password",
+              "displayName": "Password",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "enableCondition": [{"rabbitmq.connection.oauth2.grant.type":"password"}],
+              "helpTip": "Password required when using the **password** OAuth 2.0 grant type."
+            }
+          }
+
+        ]
+      }
+    },
+    {
+      "type": "attributeGroup",
+      "value": {
+        "groupName": "Resilience",
+        "isCollapsed": true,
+        "elements": [
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.idle.timeout",
+              "displayName": "Connection Idle Timeout",
+              "inputType": "string",
+              "defaultValue": "60000",
+              "required": "false",
+              "helpTip": "Maximum period (in milliseconds) the connection can remain idle before being closed."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.establish.retry.count",
+              "displayName": "Connection Establish Retry Count",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "helpTip": "Number of times to retry establishing the connection. Leave blank for default."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.establish.retry.interval",
+              "displayName": "Connection Establish Retry Interval",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "helpTip": "Interval (in milliseconds) between retries when establishing the connection."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.recovery.policy.type",
+              "displayName": "Connection Recovery Policy Type",
+              "inputType": "combo",
+              "comboValues": [
+                "FIXED",
+                "FIXED_WITH_INITIAL_DELAY",
+                "FIXED_WITH_INITIAL_DELAY_AND_TIMEOUT"
+              ],
+              "defaultValue": "FIXED_WITH_INITIAL_DELAY_AND_TIMEOUT",
+              "required": "false",
+              "helpTip": "Defines the strategy for automatic connection recovery after a disconnection."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.recovery.initial.delay",
+              "displayName": "Connection Recovery Initial Delay",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "enableCondition": ["NOT",{"rabbitmq.connection.recovery.policy.type":"FIXED"}],
+              "helpTip": "Initial delay (in milliseconds) before the first recovery attempt starts."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.recovery.retry.interval",
+              "displayName": "Connection Recovery Interval",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "helpTip": "Fixed interval (in milliseconds) between connection recovery retries."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.recovery.retry.timeout",
+              "displayName": "Connection Recovery Timeout",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "enableCondition": [{"rabbitmq.connection.recovery.policy.type":"FIXED_WITH_INITIAL_DELAY_AND_TIMEOUT"}],
+              "helpTip": "Total time (in milliseconds) allowed for the connection recovery process before giving up."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "attributeGroup",
+      "value": {
+        "groupName": "Queue Properties",
+        "isCollapsed": true,
+        "enableCondition": [{"rabbitmq.queue.auto.declare":true}],
+        "elements": [
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.queue.arguments",
+              "displayName": "Arguments",
+              "inputType": "string",
+              "defaultValue" : "",
+              "required": "false",
+              "placeholder" : "message-ttl=50000,max-length=4000",
+              "enableCondition": [{"rabbitmq.queue.auto.declare":true}],
+              "helpTip": "Additional arguments (comma-separated key=value) to use when declaring the queue."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.classic.version",
+              "displayName": "Queue Version",
+              "inputType": "combo",
+              "comboValues": [
+                "V1",
+                "V2"
+              ],
+              "defaultValue": "",
+              "required": "false",
+              "enableCondition": ["AND", {"rabbitmq.queue.auto.declare":true}, {"rabbitmq.queue.type":"CLASSIC"}],
+              "helpTip": "For Classic Queues: select the queue version (V1 or V2). V2 offers better performance."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.classic.dead.letter.strategy",
+              "displayName": "Classic Queue Dead Letter Strategy",
+              "inputType": "combo",
+              "comboValues": [
+                "FIXED_DELAY_RETRYABLE_DISCARD",
+                "NON_RETRYABLE_DISCARD"
+              ],
+              "defaultValue": "NON_RETRYABLE_DISCARD",
+              "required": "false",
+              "enableCondition": ["AND", {"rabbitmq.queue.auto.declare":true}, {"rabbitmq.queue.type":"CLASSIC"}],
+              "helpTip": "Strategy for failed messages: retry and discard, or discard immediately."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.classic.max.priority",
+              "displayName": "Max Priority",
+              "inputType": "string",
+              "defaultValue" : "",
+              "required": "false",
+              "placeholder" : "2",
+              "enableCondition": ["AND", {"rabbitmq.queue.auto.declare":true}, {"rabbitmq.queue.type":"CLASSIC"}],
+              "helpTip": "For Classic Queues: the maximum priority level the queue should support (0-255)."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.quorum.initial.member.count",
+              "displayName": "Initial Member Count",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "enableCondition": ["AND", {"rabbitmq.queue.auto.declare":true}, {"rabbitmq.queue.type":"QUORUM"}],
+              "helpTip": "For Quorum Queues: the initial number of replica nodes required."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.quorum.delivery.limit",
+              "displayName": "Delivery Limit",
+              "inputType": "string",
+              "defaultValue" : "",
+              "required": "false",
+              "enableCondition": ["AND", {"rabbitmq.queue.auto.declare":true}, {"rabbitmq.queue.type":"QUORUM"}],
+              "helpTip": "For Quorum Queues: maximum times a message can be redelivered before dead-lettering."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.quorum.dead.letter.strategy",
+              "displayName": "Quorum Queue Dead Letter Strategy",
+              "inputType": "combo",
+              "comboValues": [
+                "AT_LEAST_ONCE",
+                "AT_MOST_ONCE"
+              ],
+              "defaultValue" : "",
+              "required": "false",
+              "enableCondition": ["AND", {"rabbitmq.queue.auto.declare":true}, {"rabbitmq.queue.type":"QUORUM"}],
+              "helpTip": "For Quorum Queues: defines the acknowledgment and redelivery behavior for failed messages."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.stream.initial.member.count",
+              "displayName": "Initial Member Count",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "enableCondition": ["AND", {"rabbitmq.queue.auto.declare":true}, {"rabbitmq.queue.type":"STREAM"}],
+              "helpTip": "For STREAM queues: the initial number of stream members. Leave blank for default."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.stream.max.age",
+              "displayName": "Max Age (Seconds)",
+              "inputType": "string",
+              "defaultValue" : "",
+              "required": "false",
+              "placeholder" : "300",
+              "enableCondition": ["AND", {"rabbitmq.queue.auto.declare":true}, {"rabbitmq.queue.type":"STREAM"}],
+              "helpTip": "For STREAM queues: maximum retention time for stream data (e.g., '300')."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.stream.max.segment.size",
+              "displayName": "Max Segment Size (Bytes)",
+              "inputType": "string",
+              "defaultValue" : "",
+              "required": "false",
+              "placeholder" : "300",
+              "enableCondition": ["AND", {"rabbitmq.queue.auto.declare":true}, {"rabbitmq.queue.type":"STREAM"}],
+              "helpTip": "For STREAM queues: maximum size (in bytes) of a single segment file."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.queue.exclusive",
+              "displayName": "Exclusive",
+              "inputType": "checkbox",
+              "defaultValue": false,
+              "required": "false",
+              "enableCondition": ["AND", {"rabbitmq.queue.auto.declare":true}, {"rabbitmq.queue.type":"CLASSIC"}],
+              "helpTip": "If enabled, the queue is deleted when the declaring connection closes. Only one consumer can use it."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.queue.auto.delete",
+              "displayName": "Auto Delete",
+              "inputType": "checkbox",
+              "defaultValue": false,
+              "required": "false",
+              "enableCondition": [{"rabbitmq.queue.auto.declare":true}],
+              "helpTip": "If enabled, the queue is deleted when the last consumer disconnects."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "attributeGroup",
+      "value": {
+        "groupName": "Exchange Properties",
+        "isCollapsed": true,
+        "enableCondition": [{"rabbitmq.exchange.auto.declare":true}],
+        "elements": [
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.header.exchange.binding.arguments",
+              "displayName": "Header Exchange Binding Arguments",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "placeholder" : "x-match=all,header-1=value-1,header-2=value-2",
+              "enableCondition": [{"rabbitmq.exchange.type":"HEADERS"}],
+              "helpTip": "For **HEADERS** exchanges: set binding headers (e.g., `x-match=any`)."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.exchange.arguments",
+              "displayName": "Arguments",
+              "inputType": "string",
+              "defaultValue" : "",
+              "required": "false",
+              "placeholder" : "alternate-exchange:exchange-1",
+              "helpTip": "Additional arguments (comma-separated key=value) to use when declaring the exchange."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.exchange.auto.delete",
+              "displayName": "Auto Delete",
+              "inputType": "checkbox",
+              "defaultValue": false,
+              "required": "false",
+              "helpTip": "If enabled, the exchange is deleted when the last queue is unbound."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "attributeGroup",
+      "value": {
+        "groupName": "Stream Properties",
+        "isCollapsed": true,
+        "enableCondition": [{"rabbitmq.queue.type":"STREAM"}],
+        "elements": [
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.stream.filters",
+              "displayName": "Stream Filters",
+              "inputType": "string",
+              "defaultValue" : "",
+              "required": "false",
+              "placeholder" : "filter-1,filter-2",
+              "enableCondition": [{"rabbitmq.queue.type":"STREAM"}],
+              "helpTip": "For STREAM queues: filters (comma-separated values) to apply when consuming messages. Only matching messages are consumed."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.stream.filter.match.unfiltered",
+              "displayName": "Stream Filter Match Unfiltered",
+              "inputType": "checkbox",
+              "defaultValue" : false,
+              "required": "false",
+              "enableCondition": [{"rabbitmq.queue.type":"STREAM"}],
+              "helpTip": "If checked, messages without a filter value will also be consumed."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.stream.offset.starting.value",
+              "displayName": "Offset Value",
+              "inputType": "string",
+              "defaultValue" : "",
+              "required": "false",
+              "placeholder" : "2",
+              "enableCondition": [{"rabbitmq.queue.type":"STREAM"}],
+              "helpTip": "Message consumption starts from this specific offset value (e.g., message position). This value overrides the Offset Strategy."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.stream.offset.starting.strategy",
+              "displayName": "Offset Strategy",
+              "inputType": "combo",
+              "comboValues": [
+                "FIRST",
+                "LAST",
+                "NEXT"
+              ],
+              "defaultValue" : "NEXT",
+              "required": "false",
+              "enableCondition": [{"rabbitmq.queue.type":"STREAM"}],
+              "helpTip": "Where consumption starts: **FIRST**, **LAST**, or **NEXT** (for new chunks)."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.stream.offset.tracker.flush.interval",
+              "displayName": "Offset Tracker Flush Interval (Seconds)",
+              "inputType": "string",
+              "defaultValue" : "10",
+              "required": "false",
+              "enableCondition": [{"rabbitmq.queue.type":"STREAM"}],
+              "helpTip": "Frequency (in seconds) to persist the consumer's current offset."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.stream.offset.tracker.shutdown.timeout",
+              "displayName": "Offset Tracker Shutdown Timeout (Seconds)",
+              "inputType": "string",
+              "defaultValue" : "5",
+              "required": "false",
+              "enableCondition": [{"rabbitmq.queue.type":"STREAM"}],
+              "helpTip": "Time (in seconds) to wait for the offset tracker to safely flush state on shutdown."
+            }
+          }
+
+          ]
+        }
+    },
+    {
+      "type": "attributeGroup",
+      "value": {
+        "groupName": "SSL Configurations",
+        "isCollapsed": true,
+        "elements": [
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.ssl.enabled",
+              "displayName": "Enabled",
+              "inputType": "checkbox",
+              "defaultValue": false,
+              "required": "false",
+              "helpTip": "Enable SSL/TLS for the RabbitMQ connection."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.ssl.trust.everything",
+              "displayName": "Trust Everything",
+              "inputType": "checkbox",
+              "defaultValue": false,
+              "required": "false",
+              "enableCondition": [{"rabbitmq.connection.ssl.enabled":true}],
+              "helpTip": "If enabled, all server certificates are accepted. **Not recommended for production.**"
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.ssl.keystore.location",
+              "displayName": "Keystore Location",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "placeholder" : "path-to-keystore/keystore.jks",
+              "enableCondition": ["AND",{"rabbitmq.connection.ssl.enabled":true},{"rabbitmq.connection.ssl.trust.everything":false}],
+              "helpTip": "File path to the Keystore containing the client's private key and certificate."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.ssl.keystore.type",
+              "displayName": "Keystore Type",
+              "inputType": "string",
+              "defaultValue": "JKS",
+              "required": "false",
+              "enableCondition": ["AND",{"rabbitmq.connection.ssl.enabled":true},{"rabbitmq.connection.ssl.trust.everything":false}],
+              "helpTip": "The type of the Keystore (e.g., JKS)."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.ssl.keystore.password",
+              "displayName": "Keystore Password",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "enableCondition": ["AND",{"rabbitmq.connection.ssl.enabled":true},{"rabbitmq.connection.ssl.trust.everything":false}],
+              "helpTip": "The password to access the Keystore."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.ssl.truststore.location",
+              "displayName": "Truststore Location",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "placeholder" : "path-to-truststore/truststore.jks",
+              "enableCondition": ["AND",{"rabbitmq.connection.ssl.enabled":true},{"rabbitmq.connection.ssl.trust.everything":false}],
+              "helpTip": "File path to the Truststore containing trusted server certificates."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.ssl.truststore.type",
+              "displayName": "Truststore Type",
+              "inputType": "string",
+              "defaultValue": "JKS",
+              "required": "false",
+              "enableCondition": ["AND",{"rabbitmq.connection.ssl.enabled":true},{"rabbitmq.connection.ssl.trust.everything":false}],
+              "helpTip": "The type of the Truststore (e.g., JKS)."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.ssl.truststore.password",
+              "displayName": "Truststore Password",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "enableCondition": ["AND",{"rabbitmq.connection.ssl.enabled":true},{"rabbitmq.connection.ssl.trust.everything":false}],
+              "helpTip": "The password to access the Truststore."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.ssl.version",
+              "displayName": "SSL Version",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "placeholder" : "TLSv1.2",
+              "enableCondition": ["AND",{"rabbitmq.connection.ssl.enabled":true},{"rabbitmq.connection.ssl.trust.everything":false}],
+              "helpTip": "The preferred SSL/TLS protocol version (e.g., 'TLSv1.2', 'TLSv1.3')."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.ssl.hostname.verification.enabled",
+              "displayName": "Enabled SSL Hostname Verification",
+              "inputType": "checkbox",
+              "defaultValue": false,
+              "required": "false",
+              "enableCondition": ["AND",{"rabbitmq.connection.ssl.enabled":true},{"rabbitmq.connection.ssl.trust.everything":false}],
+              "helpTip": "If enabled, verifies the hostname in the server's certificate against the connected host name."
+            }
+          }
+
+        ]
+      }
+    },
+    {
+      "type": "attributeGroup",
+      "value": {
+        "groupName": "Dead-Letter Configurations",
+        "isCollapsed": true,
+        "enableCondition": ["NOT",{"rabbitmq.queue.type":"STREAM"}],
+        "elements": [
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.dead.letter.queue.name",
+              "displayName": "Dead Letter Queue Name",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "helpTip": "The name of the Dead Letter Queue (DLQ) for failed messages."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.dead.letter.queue.type",
+              "displayName": "Dead Letter Queue Type",
+              "inputType": "combo",
+              "comboValues": [
+                "CLASSIC",
+                "QUORUM"
+              ],
+              "defaultValue": "CLASSIC",
+              "required": "false",
+              "helpTip": "The type of the Dead Letter Queue."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.dead.letter.queue.auto.declare",
+              "displayName": "Dead Letter Queue Auto declare",
+              "inputType": "checkbox",
+              "defaultValue": false,
+              "required": "false",
+              "helpTip": "If enabled, the inbound endpoint will attempt to declare the Dead Letter Queue."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.dead.letter.exchange.name",
+              "displayName": "Dead Letter Exchange Name",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "helpTip": "The name of the Dead Letter Exchange (DLX) to route dead-lettered messages."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.dead.letter.exchange.type",
+              "displayName": "Dead Letter Exchange Type",
+              "inputType": "combo",
+              "comboValues": [
+                "DIRECT",
+                "FANOUT"
+              ],
+              "defaultValue": "DIRECT",
+              "required": "false",
+              "helpTip": "The type of the Dead Letter Exchange."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.dead.letter.exchange.auto.declare",
+              "displayName": "Dead Letter Exchange Auto declare",
+              "inputType": "checkbox",
+              "defaultValue": false,
+              "required": "false",
+              "helpTip": "If enabled, the inbound endpoint will attempt to declare the Dead Letter Exchange."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.dead.letter.routing.key",
+              "displayName": "Dead Letter Routing Key",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "enableCondition": [{"rabbitmq.dead.letter.exchange.type":"DIRECT"}],
+              "helpTip": "The routing key for messages sent to the Dead Letter Exchange (for DIRECT DLXs only)."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.max.dead.lettered.count",
+              "displayName": "Max Dead Lettered Count",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "enableCondition": ["AND",{"rabbitmq.queue.type":"CLASSIC"},{"rabbitmq.classic.dead.letter.strategy": "FIXED_DELAY_RETRYABLE_DISCARD"}],
+              "helpTip": "Maximum times a message can be dead-lettered and retried before being sent to the final DLQ."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.final.dead.letter.queue.name",
+              "displayName": "Final Dead Letter Queue Name",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "enableCondition": ["AND",{"rabbitmq.queue.type":"CLASSIC"},{"rabbitmq.classic.dead.letter.strategy": "FIXED_DELAY_RETRYABLE_DISCARD"}],
+              "helpTip": "The name of the final DLQ for messages that exceed the Max Dead Lettered Count."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.final.dead.letter.queue.type",
+              "displayName": "Final Dead Letter Queue Type",
+              "inputType": "combo",
+              "comboValues": [
+                "CLASSIC",
+                "QUORUM"
+              ],
+              "defaultValue": "CLASSIC",
+              "required": "false",
+              "enableCondition": ["AND",{"rabbitmq.queue.type":"CLASSIC"},{"rabbitmq.classic.dead.letter.strategy": "FIXED_DELAY_RETRYABLE_DISCARD"}],
+              "helpTip": "The type of the final Dead Letter Queue."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.final.dead.letter.queue.auto.declare",
+              "displayName": "Final Dead Letter Queue Auto declare",
+              "inputType": "checkbox",
+              "defaultValue": false,
+              "required": "false",
+              "enableCondition": ["AND",{"rabbitmq.queue.type":"CLASSIC"},{"rabbitmq.classic.dead.letter.strategy": "FIXED_DELAY_RETRYABLE_DISCARD"}],
+              "helpTip": "If enabled, the inbound endpoint will attempt to declare the final Dead Letter Queue."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.final.dead.letter.exchange.name",
+              "displayName": "Final Dead Letter Exchange Name",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "enableCondition": ["AND",{"rabbitmq.queue.type":"CLASSIC"},{"rabbitmq.classic.dead.letter.strategy": "FIXED_DELAY_RETRYABLE_DISCARD"}],
+              "helpTip": "The name of the final Dead Letter Exchange to route messages exceeding retry limits."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.final.dead.letter.exchange.type",
+              "displayName": "Final Dead Letter Exchange Type",
+              "inputType": "combo",
+              "comboValues": [
+                "DIRECT",
+                "FANOUT"
+              ],
+              "defaultValue": "DIRECT",
+              "required": "false",
+              "enableCondition": ["AND",{"rabbitmq.queue.type":"CLASSIC"},{"rabbitmq.classic.dead.letter.strategy": "FIXED_DELAY_RETRYABLE_DISCARD"}],
+              "helpTip": "The type of the final Dead Letter Exchange."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.final.dead.letter.exchange.auto.declare",
+              "displayName": "Final Dead Letter Exchange Auto declare",
+              "inputType": "checkbox",
+              "defaultValue": false,
+              "required": "false",
+              "enableCondition": ["AND",{"rabbitmq.queue.type":"CLASSIC"},{"rabbitmq.classic.dead.letter.strategy": "FIXED_DELAY_RETRYABLE_DISCARD"}],
+              "helpTip": "If enabled, the inbound endpoint will attempt to declare the final Dead Letter Exchange."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.final.dead.letter.routing.key",
+              "displayName": "Final Dead Letter Routing Key",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "enableCondition": ["AND",{"rabbitmq.final.dead.letter.exchange.type":"DIRECT"},["AND",{"rabbitmq.queue.type":"CLASSIC"},{"rabbitmq.classic.dead.letter.strategy": "FIXED_DELAY_RETRYABLE_DISCARD"}]],
+              "helpTip": "The routing key for messages sent to the final Dead Letter Exchange (for DIRECT DLXs only)."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.dead.letter.publisher.retry.interval",
+              "displayName": "Dead Letter Publisher Retry Interval (ms)",
+              "inputType": "string",
+              "defaultValue": "10000",
+              "required": "false",
+              "enableCondition": ["AND",{"rabbitmq.queue.type":"CLASSIC"},{"rabbitmq.classic.dead.letter.strategy": "FIXED_DELAY_RETRYABLE_DISCARD"}],
+              "helpTip": "Interval (in milliseconds) between retries when publishing to a Dead Letter Queue."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.dead.letter.publisher.retry.count",
+              "displayName": "Dead Letter Publisher Retry Count",
+              "inputType": "string",
+              "defaultValue": "3",
+              "required": "false",
+              "enableCondition": ["AND",{"rabbitmq.queue.type":"CLASSIC"},{"rabbitmq.classic.dead.letter.strategy": "FIXED_DELAY_RETRYABLE_DISCARD"}],
+              "helpTip": "Number of times to retry publishing a message to a Dead Letter Queue."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.dead.letter.publisher.retry.exponential.factor",
+              "displayName": "Dead Letter Publisher Retry Exponential Factor",
+              "inputType": "string",
+              "defaultValue": "2.0",
+              "required": "false",
+              "enableCondition": ["AND",{"rabbitmq.queue.type":"CLASSIC"},{"rabbitmq.classic.dead.letter.strategy": "FIXED_DELAY_RETRYABLE_DISCARD"}],
+              "helpTip": "Exponential backoff factor applied to the retry interval (e.g., 2.0 doubles the interval)."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.dead.letter.publisher.ack.wait.time",
+              "displayName": "Dead Letter Publisher Broker ACKNOWLEDGE Waiting Time (ms)",
+              "inputType": "string",
+              "defaultValue": "30000",
+              "required": "false",
+              "enableCondition": ["AND",{"rabbitmq.queue.type":"CLASSIC"},{"rabbitmq.classic.dead.letter.strategy": "FIXED_DELAY_RETRYABLE_DISCARD"}],
+              "helpTip": "Maximum time (in milliseconds) to wait for the broker to acknowledge a dead-letter message."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.dead.letter.publisher.shutdown.timeout",
+              "displayName": "Dead Letter Publisher Shutdown Timeout (ms)",
+              "inputType": "string",
+              "defaultValue": "180000",
+              "required": "false",
+              "enableCondition": ["AND",{"rabbitmq.queue.type":"CLASSIC"},{"rabbitmq.classic.dead.letter.strategy": "FIXED_DELAY_RETRYABLE_DISCARD"}],
+              "helpTip": "Time (in milliseconds) to wait for the dead letter publisher to shut down gracefully."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "attributeGroup",
+      "value": {
+        "groupName": "Throttling Configurations",
+        "isCollapsed": true,
+        "elements": [
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.throttle.enabled",
+              "displayName": "Throttling Enabled",
+              "inputType": "checkbox",
+              "defaultValue": "false",
+              "required": "false",
+              "helpTip": "If enabled, message consumption will be throttled to a specified rate."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.throttle.mode",
+              "displayName": "Throttling Mode",
+              "inputType": "combo",
+              "comboValues": [
+                "FIXED_INTERVAL",
+                "BATCH"
+              ],
+              "defaultValue" : "BATCH",
+              "required": "false",
+              "helpTip": "Mode of throttling: **FIXED_INTERVAL** or **BATCH**."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.throttle.timeUnit",
+              "displayName": "Throttling TimeUnit",
+              "inputType": "combo",
+              "comboValues": [
+                "MINUTE",
+                "HOUR",
+                "DAY"
+              ],
+              "defaultValue" : "MINUTE",
+              "required": "false",
+              "helpTip": "The time unit for the throttling rate: per **MINUTE**, **HOUR**, or **DAY**."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.throttle.count",
+              "displayName": "Throttling Limit",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "helpTip": "Maximum number of messages to consume within the specified time unit."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "attributeGroup",
+      "value": {
+        "groupName": "Other",
+        "isCollapsed": true,
+        "elements": [
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.server.virtual.host",
+              "displayName": "Virtual Host",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "helpTip": "The virtual host (vhost) to connect to. Leave blank for the default '/' vhost."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.message.content.type",
+              "displayName": "Content-Type",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "placeholder" : "application/json",
+              "helpTip": "The Content-Type header to set for the consumed message  if the content-type cannot be determined from the consumed message."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.message.content.encoding",
+              "displayName": "Content Encoding (Charset)",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "placeholder" : "UTF-8",
+              "helpTip": "The content encoding/character set (e.g., UTF-8) used for the message body if the encoding/character set cannot be determined from the consumed message."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.queue.overflow.strategy",
+              "displayName": "QUEUE Overflow Strategy",
+              "inputType": "combo",
+              "comboValues": [
+                "DROP_HEAD",
+                "REJECT_PUBLISH",
+                "REJECT_PUBLISH_DLX"
+              ],
+              "defaultValue": "DROP_HEAD",
+              "required": "false",
+              "enableCondition": ["NOT",{"rabbitmq.queue.type":"STREAM"}],
+              "helpTip": "What happens when queue is full: **DROP_HEAD** (oldest discarded), **REJECT_PUBLISH**, or **REJECT_PUBLISH_DLX**."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.message.requeue.delay",
+              "displayName": "Requeue Delay",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "helpTip": "Delay (in milliseconds) before a failed message is automatically requeued."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.auto.ack.enabled",
+              "displayName": "Auto Acknowledge Enabled",
+              "inputType": "checkbox",
+              "defaultValue": "false",
+              "required": "false",
+              "helpTip": "If enabled, messages are automatically acknowledged (ACKed) upon receipt."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.ack.wait.time",
+              "displayName": "ACKNOWLEDGE Wait Time (ms)",
+              "inputType": "string",
+              "defaultValue": "180000",
+              "required": "false",
+              "helpTip": "Maximum time (in milliseconds) to wait for a message acknowledgment (ACK)."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.concurrent.consumers.count",
+              "displayName": "Concurrent Consumers",
+              "inputType": "string",
+              "defaultValue": "1",
+              "required": "false",
+              "helpTip": "The number of concurrent consumers to create for processing messages.",
+              "enableCondition": ["NOT",{"rabbitmq.queue.type":"STREAM"}]
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.message.receiver.thread.pool.size",
+              "displayName": "Message Receiver Thread Pool Size",
+              "inputType": "string",
+              "defaultValue": "1",
+              "required": "false",
+              "helpTip": "Size of the thread pool for receiving messages. Recommended to be greater than the number of concurrent consumers.",
+              "enableCondition": ["NOT",{"rabbitmq.queue.type":"STREAM"}]
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.consumer.initial.credit",
+              "displayName": "Consumer initial credit",
+              "inputType": "string",
+              "defaultValue": "1",
+              "required": "false",
+              "helpTip": "The prefetch count, limiting unacknowledged messages sent to the consumer (QoS)."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.classic.override.requeue.with.discard",
+              "displayName": "Override Requeue decision With Discard",
+              "inputType": "checkbox",
+              "defaultValue": false,
+              "required": "false",
+              "enableCondition": [{"rabbitmq.queue.type":"CLASSIC"}],
+              "helpTip": "For Classic Queues: if enabled, any requeue attempt for a failed message will result in discard instead."
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
