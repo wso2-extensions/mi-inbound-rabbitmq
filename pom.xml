@@ -101,7 +101,14 @@
         <version>1.6.1-wso2v110</version>
     </dependency>
     </dependencies>
-
+     <scm>
+        <connection>scm:git:https://github.com/wso2-extensions/mi-inbound-rabbitmq.git
+        </connection>
+        <url>https://github.com/wso2-extensions/mi-inbound-rabbitmq.git</url>
+        <developerConnection>scm:git:https://github.com/wso2-extensions/mi-inbound-rabbitmq
+        </developerConnection>
+        <tag>HEAD</tag>
+    </scm>
     <build>
         <plugins>
             <plugin>
