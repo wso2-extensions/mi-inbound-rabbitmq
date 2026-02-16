@@ -24,7 +24,7 @@
             "operations": [
                 {
                     "name": "init",
-                    "description": "Initialize Kafka Inbound Endpoint",
+                    "description": "Initialize RabbitMQ Inbound Endpoint",
                     "params": [
                         {
                             "name": "name",
