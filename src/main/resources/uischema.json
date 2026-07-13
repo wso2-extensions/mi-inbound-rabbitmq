@@ -361,8 +361,19 @@
               "enableCondition": [{"rabbitmq.connection.oauth2.grant.type":"password"}],
               "helpTip": "Password required when using the **password** OAuth 2.0 grant type."
             }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.connection.oauth2.scope",
+              "displayName": "Scope",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "true",
+              "enableCondition": [{"rabbitmq.connection.oauth2.enabled":true}],
+              "helpTip": "Scopes to include in the OAuth 2.0 token request (space-separated if multiple)."
+            }
           }
-
         ]
       }
     },
@@ -464,7 +475,7 @@
       "value": {
         "groupName": "Queue Properties",
         "isCollapsed": true,
-        "enableCondition": [{"rabbitmq.queue.auto.declare":true}],
+        "enableCondition": ["OR", {"rabbitmq.queue.auto.declare":true}, {"rabbitmq.queue.type":"CLASSIC"}],
         "elements": [
           {
             "type": "attribute",
@@ -507,7 +518,7 @@
               ],
               "defaultValue": "NON_RETRYABLE_DISCARD",
               "required": "false",
-              "enableCondition": ["AND", {"rabbitmq.queue.auto.declare":true}, {"rabbitmq.queue.type":"CLASSIC"}],
+              "enableCondition": [{"rabbitmq.queue.type":"CLASSIC"}],
               "helpTip": "Strategy for failed messages: retry and discard, or discard immediately."
             }
           },
@@ -988,6 +999,18 @@
               "required": "false",
               "enableCondition": [{"rabbitmq.dead.letter.exchange.type":"DIRECT"}],
               "helpTip": "The routing key for messages sent to the Dead Letter Exchange (for DIRECT DLXs only)."
+            }
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "name": "rabbitmq.dead.letter.queue.message.ttl",
+              "displayName": "Dead Letter Queue Message TTL",
+              "inputType": "string",
+              "defaultValue": "",
+              "required": "false",
+              "enableCondition": ["AND",{"rabbitmq.dead.letter.queue.auto.declare":true},{"rabbitmq.classic.dead.letter.strategy": "FIXED_DELAY_RETRYABLE_DISCARD"}],
+              "helpTip": "Time-to-live (TTL) in milliseconds for messages in the Dead Letter Queue before being retried or discarded."
             }
           },
           {

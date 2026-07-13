@@ -216,6 +216,13 @@
                             "description": "Password required when using the **password** OAuth 2.0 grant type."
                         },
                         {
+                            "name": "rabbitmq.connection.oauth2.scope",
+                            "type": "string",
+                            "required": false,
+                            "defaultValue": "",
+                            "description": "Scopes to include in the OAuth 2.0 token request (space-separated if multiple)."
+                        },
+                        {
                             "name": "rabbitmq.connection.idle.timeout",
                             "type": "string",
                             "required": false,
@@ -529,6 +536,13 @@
                             "required": false,
                             "defaultValue": "",
                             "description": "The routing key for messages sent to the Dead Letter Exchange (for DIRECT DLXs only)."
+                        },
+                        {
+                            "name": "rabbitmq.dead.letter.queue.message.ttl",
+                            "type": "string",
+                            "required": false,
+                            "defaultValue": "",
+                            "description": "Time-to-live (TTL) in milliseconds for messages in the Dead Letter Queue before being retried or discarded."
                         },
                         {
                             "name": "rabbitmq.max.dead.lettered.count",

@@ -243,11 +243,13 @@ public class RabbitMQEnvironment {
         String tokenEndpoint = rabbitMQProperties.get(RabbitMQConstants.OAUTH2_TOKEN_ENDPOINT);
         String clientId = rabbitMQProperties.get(RabbitMQConstants.OAUTH2_CLIENT_ID);
         String clientSecret = rabbitMQProperties.get(RabbitMQConstants.OAUTH2_CLIENT_SECRET);
+        String scope = rabbitMQProperties.get(RabbitMQConstants.OAUTH2_SCOPE);
 
         String[] missingOauth2Properties = {
                 StringUtils.isEmpty(tokenEndpoint) ? RabbitMQConstants.OAUTH2_TOKEN_ENDPOINT : null,
                 StringUtils.isEmpty(clientId) ? RabbitMQConstants.OAUTH2_CLIENT_ID : null,
                 StringUtils.isEmpty(clientSecret) ? RabbitMQConstants.OAUTH2_CLIENT_SECRET : null,
+                StringUtils.isEmpty(scope) ? RabbitMQConstants.OAUTH2_SCOPE : null
         };
 
         Arrays.stream(missingOauth2Properties)
@@ -258,6 +260,15 @@ public class RabbitMQEnvironment {
             log.error(logPrefix + " - Required OAuth2 properties are not provided properly.");
             throw new SynapseException("Required OAuth2 properties are not provided properly.");
         }
+
+        scope = scope.trim();
+        if (!scope.matches("^[\\S]+([ ][\\S]+)*$")) {
+            log.error(logPrefix + " - The OAuth2 property 'scope' has an invalid format. " +
+                    "Ensure it is separated by spaces if multiple scopes are provided.");
+            throw new SynapseException("The 'scope' parameter has an invalid format. " +
+                    "Ensure it is separated by spaces if multiple scopes are provided.");
+        }
+
 
         String grantType = StringUtils.defaultIfEmpty(
                 rabbitMQProperties.get(RabbitMQConstants.OAUTH2_GRANT_TYPE),
@@ -277,6 +288,8 @@ public class RabbitMQEnvironment {
                     .grantType(grantType)
                     .shared(true);
         }
+
+        connectionSettings.oauth2().parameter(RabbitMQConstants.SCOPE_PARAMETER, scope);
 
         connectionSettings.oauth2().tls().sslContext(getOAuth2SSLContext());
     }

@@ -166,6 +166,7 @@ public class RabbitMQConstants {
     public static final String OAUTH2_CLIENT_SECRET = "rabbitmq.connection.oauth2.client.secret";
     public static final String OAUTH2_USERNAME = "rabbitmq.connection.oauth2.username";
     public static final String OAUTH2_PASSWORD = "rabbitmq.connection.oauth2.password";
+    public static final String OAUTH2_SCOPE = "rabbitmq.connection.oauth2.scope";
 
     // --- Exchange Properties ---
     // ---------------------------
@@ -389,6 +390,7 @@ public class RabbitMQConstants {
      * Property name for the offset value within the resource.
      */
     public static final String PROPERTY_NAME = "offsetProperty";
+    public static final String SCOPE_PARAMETER = "scope";
 
     // --- Enums for Configuration ---
     // -------------------------------
