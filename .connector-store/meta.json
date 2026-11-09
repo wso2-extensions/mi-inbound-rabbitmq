@@ -7,7 +7,7 @@
     "rank": 15,
     "type": "Inbound",
     "category": "Developer Tools",
-    "documentationUrl": "",
+    "documentationUrl": "https://mi.docs.wso2.com/en/latest/reference/connectors/rabbitmq-amqp-1.0-connector/rabbitmq-amqp-1.0-inbound-endpoint-reference/",
     "description": "RabbitMQ Message Listener",
     "status": "Active",
     "labels": [
